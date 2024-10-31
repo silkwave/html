@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>img_base64</title>
+  </head>
+
+  <body>
+    <img id="img" src="16.png" alt="png" height="400" width="400" />
+    <textarea id="result" rows="25" cols="50"> </textarea>
+    <img id="view_img" src="" alt="png" height="400" width="400" />
+
+    <script>
+      const img = document.getElementById("img");
+      const result = document.getElementById("result");
+      const view_img = document.getElementById("view_img");
+
+      img.crossOrigin = "Anonymous";
+      img.onload = function () {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.height = this.naturalHeight;
+        canvas.width = this.naturalWidth;
+
+        ctx.drawImage(this, 0, 0);
+
+        let data = canvas.toDataURL("image/png");
+        result.value = data;
+
+        console.log(result.value);
+
+        view_img.src = result.value;
+      };
+    </script>
+  </body>
+</html>

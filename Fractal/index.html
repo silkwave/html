@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="styleshhet" type="text/css" href="style.css">
+
+    <title>Document</title>
+  </head>
+  <body>
+
+
+        
+    <canvas id="canvas1"></canvas>
+    <p id="info">
+      Responsive fractal, click Randomize! button or adjust sliders, right click to save as PNG with transparent background!
+      <a href="https://www.youtube.com/frankslaboratory" target="_blank">youtube.com/frankslaboratory</a>
+    </p>
+    <div id="controls">
+      <button id="randomizeButton">Randomize!</button>
+      <p>
+        <input type="range" min="0.1" max="3.1" step="0.025" value="1" id="spread" />
+        <label for="spread">Spread:</label>
+      </p>
+      <p>
+        <input type="range" min="2" max="20" step="1" value="5" id="sides" />
+        <label for="sides">Sides:</label>
+      </p>
+      <p id="controlsHeader">Distort:</p>
+      <p>
+        <input type="range" min="0" max="3" step="0.025" value="1" id="skew1" />
+        <label for="skew1">Skew 1:</label>
+      </p>
+      <p>
+        <input type="range" min="0" max="3" step="0.025" value="1" id="skew2" />
+        <label for="skew2">Skew 2:</label>
+      </p>
+      <p>
+        <input type="range" min="0" max="300" step="2" value="0" id="center" />
+        <label for="center">Center:</label>
+      </p>
+      <button id="resetButton">Reset!</button>
+    </div>
+
+
+  </body>
+
+  <script src="script.js"></script>    
+    
+</html>
