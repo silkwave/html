@@ -4,20 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>전문 분석기</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        button { margin: 10px; padding: 10px; }
-        #result { margin-top: 20px; font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="styles.css"> <!-- CSS 파일 연결 -->
 </head>
 <body>
     <h1>전문 분석기</h1>
     
-    <div id="orginalmesg"></div>     
-    <div id="result"></div>
+    <div id="orginalmesg">
+        <span id="messageLabel">원본 전문:</span>
+        <span id="messageContent">가나다1234567890</span>
+    </div>
+    
+    <div id="result">
+        <span id="mergedField">합쳐진 전문:</span>
+        <span id="mergedValue">[]</span>
+    </div>
 
     <table id="dataTable">
         <thead>
@@ -36,6 +36,6 @@
     <button onclick="splitSeg()">전문 분석기</button>
     <button onclick="mergeSeg()">전문 합치기</button>
 
-    <script src="script.js"></script>
+    <script src="script.js"></script> <!-- JavaScript 파일 연결 -->
 </body>
 </html>

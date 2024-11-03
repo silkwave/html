@@ -14,16 +14,80 @@ function createSampleData() {
 
     // 원본 메시지 표시
     const originalMessage = "가나다1234567890가나다1234567890가나다1234567890가나다1234567890가나다1234567890"; // 합쳐진 전문
-    document.getElementById("orginalmesg").innerText = "원본 전문: " + originalMessage;    
+    document.getElementById("messageContent").innerText = originalMessage;
+
+    makeCellsEditable(); // 셀 편집 기능 활성화
+}
+
+// 셀 편집 기능 추가
+function makeCellsEditable() {
+    const table = document.getElementById("dataTable");
+    const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+
+    for (let row of rows) {
+        for (let cell of row.cells) {
+            cell.addEventListener('click', function() {
+                const currentText = cell.innerText;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentText;
+
+                cell.innerHTML = ''; // 셀 내용 삭제
+                cell.appendChild(input); // 입력 필드 추가
+                input.focus(); // 입력 필드 포커스
+
+                input.addEventListener('blur', function() {
+                    cell.innerText = input.value; // 수정된 내용으로 셀 업데이트
+                });
+
+                input.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter') {
+                        cell.innerText = input.value; // 수정된 내용으로 셀 업데이트
+                    }
+                });
+            });
+        }
+    }
+}
+
+// 원본 메시지 수정 기능 추가
+function editOriginalMessage() {
+    const messageContent = document.getElementById("messageContent");
+    const currentText = messageContent.innerText; // 현재 메시지 내용 가져오기
+
+    // 입력 필드 생성
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentText;
+
+    // 기존 내용을 삭제하고 입력 필드를 추가
+    messageContent.innerHTML = ''; 
+    messageContent.appendChild(input); 
+    input.focus(); 
+
+    // 입력 필드가 블러되거나 Enter 키를 누르면 수정된 내용으로 업데이트
+    input.addEventListener('blur', function() {
+        updateOriginalMessage(input.value);
+    });
+
+    input.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            updateOriginalMessage(input.value);
+        }
+    });
+}
+
+// 원본 메시지 업데이트
+function updateOriginalMessage(newMessage) {
+    document.getElementById("messageContent").innerText = newMessage; // 메시지 내용 업데이트
+    console.log(`원본 전문 수정됨: '${newMessage}'`);
 }
 
 // 전문 분석기
 function splitSeg() {
     const table = document.getElementById("dataTable");
     const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
-
-    // 첫 번째 전문 내용 가져오기
-    const originalMessage = document.getElementById("orginalmesg").innerText.replace("원본 전문: ", ""); // 원본 전문
+    const originalMessage = document.getElementById("messageContent").innerText; // 원본 전문
     let curLen = 0;
 
     for (let row of rows) {
@@ -33,7 +97,7 @@ function splitSeg() {
         curLen += segLen;
     }
 
-    document.getElementById("result").innerText = "전문 분석 완료"; // 결과 표시
+    alert("전문 분석이 완료되었습니다."); // 사용자 알림
 }
 
 // 전문 합치기
@@ -48,6 +112,7 @@ function mergeSeg() {
         comMsg += msgPart; // 전문 내용 결합
     }
 
-    // 결과를 div에 표시
-    document.getElementById("result").innerText = "합쳐진 전문: " + comMsg;
+    // 합쳐진 전문 업데이트
+    document.getElementById("mergedValue").innerText = "[" + comMsg + "]"; // 합쳐진 전문값 업데이트
+    alert("전문이 성공적으로 합쳐졌습니다."); // 사용자 알림
 }
