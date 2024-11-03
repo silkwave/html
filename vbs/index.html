@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전문 분석기</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        button { margin: 10px; padding: 10px; }
+        #result { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>전문 분석기</h1>
+    
+    <div id="orginalmesg"></div>     
+    <div id="result"></div>
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>영문명</th>
+                <th>한글명</th>
+                <th>길이</th>
+                <th>전문내용</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 샘플 데이터가 여기에 추가됩니다. -->
+        </tbody>
+    </table>
+    <button onclick="createSampleData()">샘플 데이터 생성</button>
+    <button onclick="splitSeg()">전문 분석기</button>
+    <button onclick="mergeSeg()">전문 합치기</button>
+
+    <script src="script.js"></script>
+</body>
+</html>
