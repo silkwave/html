@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            width: 300px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+        }
+        li.completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+        .delete {
+            color: red;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>To-Do List</h1>
+    <input type="text" id="todoInput" placeholder="할 일을 입력하세요">
+    <button onclick="addTodo()">추가</button>
+    <ul id="todoList"></ul>
+</div>
+
+<script>
+    // 저장된 할 일을 로드하는 함수
+    function loadTodos() {
+        const savedTodos = JSON.parse(localStorage.getItem('todos')) || [];
+        savedTodos.forEach(todo => {
+            addTodoToDOM(todo.text, todo.completed);
+        });
+    }
+
+    // 로컬 스토리지에 할 일 목록 저장하는 함수
+    function saveTodos() {
+        const todos = [];
+        document.querySelectorAll('#todoList li').forEach(li => {
+            todos.push({
+                text: li.firstChild.textContent,
+                completed: li.classList.contains('completed')
+            });
+        });
+        localStorage.setItem('todos', JSON.stringify(todos));
+    }
+
+    function addTodo() {
+        const todoInput = document.getElementById('todoInput');
+        const todoText = todoInput.value.trim();
+        if (todoText === "") return;
+
+        addTodoToDOM(todoText, false);
+        saveTodos();
+        todoInput.value = '';
+    }
+
+    // 할 일을 DOM에 추가하는 함수
+    function addTodoToDOM(text, completed) {
+        const todoList = document.getElementById('todoList');
+        const li = document.createElement('li');
+        li.textContent = text;
+
+        if (completed) {
+            li.classList.add('completed');
+        }
+
+        const deleteBtn = document.createElement('span');
+        deleteBtn.textContent = "삭제";
+        deleteBtn.classList.add("delete");
+        deleteBtn.onclick = function() {
+            todoList.removeChild(li);
+            saveTodos();
+        };
+
+        li.appendChild(deleteBtn);
+        li.onclick = function() {
+            li.classList.toggle('completed');
+            saveTodos();
+        };
+
+        todoList.appendChild(li);
+    }
+
+    document.getElementById('todoInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addTodo();
+        }
+    });
+
+    // 페이지 로드 시 저장된 할 일 목록을 불러옴
+    window.onload = loadTodos;
+</script>
+
+</body>
+</html>
