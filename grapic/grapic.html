@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지브리 스타일 캔버스</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f4f8; /* 밝은 배경색 */
+            font-family: 'Noto Sans KR', sans-serif; /* 한국어 폰트 추가 */
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px; /* 최대 너비 설정 */
+            background-color: rgba(255, 255, 255, 0.8); /* 흰색 배경에 약간의 투명도 적용 */
+            padding: 20px;
+            border-radius: 16px; /* 둥근 모서리 적용 */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 그림자 효과 적용 */
+            text-align: center;
+            backdrop-filter: blur(10px); /* 배경 블러 처리 */
+            border: 1px solid rgba(255, 255, 255, 0.3); /* 경계선 추가 */
+        }
+
+        h1 {
+            font-size: 2.5rem; /* 제목 크기 키움 */
+            color: #4CAF50; /* 지브리 느낌의 초록색 */
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* 텍스트 그림자 */
+        }
+
+        p {
+            font-size: 1.1rem; /* 문단 텍스트 약간 키움 */
+            color: #555; /* 더 차분한 텍스트 색상 */
+            margin-bottom: 20px;
+            line-height: 1.7; /* 줄 간격 넓혀 가독성 향상 */
+        }
+
+        #canvas {
+            border: 4px solid #66BB6A; /* 캔버스 테두리 색상 변경 */
+            border-radius: 12px; /* 캔버스 둥근 모서리 */
+            background-color: #E0F2F1; /* 캔버스 배경색 설정. 지브리 느낌의 밝은 색 */
+            display: block; /* 블록 요소로 만들어 중앙 정렬 용이하게 함 */
+            margin: 0 auto; /* 좌우 마진 auto로 설정하여 중앙 정렬 */
+            max-width: 100%; /* 최대 너비 설정 */
+            height: auto; /* 높이 자동 설정 */
+            box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.1); /* 캔버스 그림자 */
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            color: white;
+            background-color: #4CAF50; /* 지브리 느낌의 초록색 */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s ease; /* 부드러운 색상 변화 */
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); /* 버튼 그림자 */
+        }
+
+        button:hover {
+            background-color: #43A047; /* 살짝 더 어두운 초록색 */
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .file-upload-button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            color: white;
+            background-color: #4CAF50; /* 지브리 느낌의 초록색 */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s ease; /* 부드러운 색상 변화 */
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); /* 버튼 그림자 */
+            display: inline-block; /* 인라인 블록 요소로 설정 */
+        }
+
+        .file-upload-button:hover {
+            background-color: #43A047; /* 살짝 더 어두운 초록색 */
+        }
+
+        #loading {
+            position: fixed; /* 전체 화면을 덮도록 fixed 사용 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8); /* 반투명 흰색 배경 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* 다른 요소 위에 표시되도록 높은 z-index 설정 */
+            font-size: 1.5rem;
+            color: #4CAF50; /* 로딩 메시지 색상 */
+            font-weight: bold;
+            backdrop-filter: blur(5px); /* 배경 블러 처리 */
+        }
+
+        #loading.hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            p {
+                font-size: 1rem;
+            }
+            button, .file-upload-button {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+            #canvas {
+                border-width: 3px; /* 모바일에서 테두리 두께 줄임 */
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet"> </head>
+<body>
+    <div class="container">
+        <h1>지브리 스타일 캔버스</h1>
+        <p>이미지를 업로드하면 지브리 스타일로 변환하여 캔버스에 표시합니다.</p>
+        <canvas id="canvas" width="600" height="400"></canvas>
+        <input type="file" id="imageInput" accept="image/*">
+        <label for="imageInput" class="file-upload-button">이미지 선택</label>
+        <button id="convertButton">변환하기</button>
+        <div id="loading" class="hidden">변환 중...</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const imageInput = document.getElementById('imageInput');
+        const convertButton = document.getElementById('convertButton');
+        const loadingIndicator = document.getElementById('loading');
+
+        let originalImage = null;
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalImage = new Image();
+                    originalImage.onload = () => {
+                        // 이미지가 로드된 후에 캔버스 크기 조정
+                        resizeCanvas(originalImage);
+                        // clearCanvas(); // 캔버스 초기화.  이미지 다시 로드할 때 지우는게 좋을수도 있고, 안지우는게 좋을수도 있습니다.
+                        // drawOriginalImage(originalImage); // 필요하다면, 업로드된 이미지를 캔버스에 그림.
+                    };
+                    originalImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        convertButton.addEventListener('click', () => {
+            if (originalImage) {
+                loadingIndicator.classList.remove('hidden'); // 로딩 표시 활성화
+                setTimeout(() => {
+                    convertToGhibliStyle(originalImage);
+                    loadingIndicator.classList.add('hidden'); // 변환 완료 후 로딩 표시 숨김
+                }, 0); // 0ms 지연으로 비동기 처리
+            } else {
+                alert('이미지를 먼저 업로드해주세요.');
+            }
+        });
+
+        function resizeCanvas(img) {
+            const containerWidth = document.querySelector('.container').offsetWidth;
+            const maxWidth = Math.min(containerWidth - 40, 800); // 컨테이너 너비에 맞추고 최대 너비 제한
+            if (img.width > maxWidth) {
+                canvas.width = maxWidth;
+                canvas.height = img.height * (maxWidth / img.width);
+            } else {
+                canvas.width = img.width;
+                canvas.height = img.height;
+            }
+        }
+
+        function drawOriginalImage(img) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function convertToGhibliStyle(img) {
+            resizeCanvas(img); // 캔버스 크기 다시 설정
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+                let a = data[i + 3];
+
+                // 지브리 스타일 필터 적용 (색감 조정, 엣지 강조 등)
+                // 예시: 세피아 톤 적용 및 채도, 명도 조정
+                r = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
+                g = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
+                b = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
+
+                // 채도 증가
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                let delta = (max - min) / 255;
+                if (delta > 0.00001) {
+                    let l = (max + min) / 255;
+                    let s = l < 0.5 ? delta / (l * 2) : delta / (2 - l * 2);
+                    s *= 1.5; // 채도 증가
+                    if (s > 1) s = 1;
+                    if (s > 0) {
+                        let r1 = (r - l) / delta;
+                        let g1 = (g - l) / delta;
+                        let b1 = (b - l) / delta;
+                        if (r === max) {
+                            h = (g1 - b1) / 6 + (g1 < b1 ? 1 : 0);
+                        } else if (g === max) {
+                            h = (b1 - r1) / 6 + 1 / 3;
+                        } else {
+                            h = (r1 - g1) / 6 + 2 / 3;
+                        }
+                        let temp1 = l * (1 + s);
+                        let temp2 = l * (1 - s);
+                        r = (temp1 - temp2) * ((r - l) / delta) + temp2;
+                        g = (temp1 - temp2) * ((g - l) / delta) + temp2;
+                        b = (temp1 - temp2) * ((b - l) / delta) + temp2;
+                    }
+                }
+
+                // 명도 감소
+                r *= 0.9;
+                g *= 0.9;
+                b *= 0.9;
+
+                data[i] = r;
+                data[i + 1] = g;
+                data[i + 2] = b;
+                data[i + 3] = a;
+            }
+
+            imageData.data = data;
+            ctx.putImageData(imageData, 0, 0);
+
+            // 엣지 검출 및 강조 (Sobel 연산자 사용)
+            const edgeCanvas = document.createElement('canvas');
+            const edgeCtx = edgeCanvas.getContext('2d');
+            edgeCanvas.width = canvas.width;
+            edgeCanvas.height = canvas.height;
+            edgeCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+            const edgeImageData = edgeCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const edgeData = edgeImageData.data;
+            const edgeBuffer = new Uint8ClampedArray(edgeData.length);
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const i = (x + y * width) * 4;
+
+                    // Sobel 연산자 마스크
+                    const gxRed = (-1 * edgeData[(x - 1 + (y - 1) * width) * 4]) +
+                                  (-2 * edgeData[(x - 1 + y * width) * 4]) +
+                                  (-1 * edgeData[(x - 1 + (y + 1) * width) * 4]) +
+                                  (1 * edgeData[(x + 1 + (y - 1) * width) * 4]) +
+                                  (2 * edgeData[(x + 1 + y * width) * 4]) +
+                                  (1 * edgeData[(x + 1 + (y + 1) * width) * 4]);
+
+                    const gyRed = (-1 * edgeData[(x - 1 + (y - 1) * width) * 4]) +
+                                  (-2 * edgeData[(x + (y - 1) * width) * 4]) +
+                                  (-1 * edgeData[(x + 1 + (y - 1) * width) * 4]) +
+                                  (1 * edgeData[(x - 1 + (y + 1) * width) * 4]) +
+                                  (2 * edgeData[(x + (y + 1) * width) * 4]) +
+                                  (1 * edgeData[(x + 1 + (y + 1) * width) * 4]);
+
+                    const gxGreen = (-1 * edgeData[(x - 1 + (y - 1) * width) * 4 + 1]) +
+                                    (-2 * edgeData[(x - 1 + y * width) * 4 + 1]) +
+                                    (-1 * edgeData[(x - 1 + (y + 1) * width) * 4 + 1]) +
+                                    (1 * edgeData[(x + 1 + (y - 1) * width) * 4 + 1]) +
+                                    (2 * edgeData[(x + 1 + y * width) * 4 + 1]) +
+                                    (1 * edgeData[(x + 1 + (y + 1) * width) * 4 + 1]);
+
+                    const gyGreen = (-1 * edgeData[(x - 1 + (y - 1) * width) * 4 + 1]) +
+                                    (-2 * edgeData[(x + (y - 1) * width) * 4 + 1]) +
+                                    (-1 * edgeData[(x + 1 + (y - 1) * width) * 4 + 1]) +
+                                    (1 * edgeData[(x - 1 + (y + 1) * width) * 4 + 1]) +
+                                    (2 * edgeData[(x + (y + 1) * width) * 4 + 1]) +
+                                    (1 * edgeData[(x + 1 + (y + 1) * width) * 4 + 1]);
+
+                    const gxBlue = (-1 * edgeData[(x - 1 + (y - 1) * width) * 4 + 2]) +
+                                   (-2 * edgeData[(x - 1 + y * width) * 4 + 2]) +
+                                   (-1 * edgeData[(x - 1 + (y + 1) * width) * 4 + 2]) +
+                                   (1 * edgeData[(x + 1 + (y - 1) * width) * 4 + 2]) +
+                                   (2 * edgeData[(x + 1 + y * width) * 4 + 2]) +
+                                   (1 * edgeData[(x + 1 + (y + 1) * width) * 4 + 2]);
+
+                    const gyBlue = (-1 * edgeData[(x - 1 + (y - 1) * width) * 4 + 2]) +
+                                   (-2 * edgeData[(x + (y - 1) * width) * 4 + 2]) +
+                                   (-1 * edgeData[(x + 1 + (y - 1) * width) * 4 + 2]) +
+                                   (1 * edgeData[(x - 1 + (y + 1) * width) * 4 + 2]) +
+                                   (2 * edgeData[(x + (y + 1) * width) * 4 + 2]) +
+                                   (1 * edgeData[(x + 1 + (y + 1) * width) * 4 + 2]);
+
+                    const edgeValueRed = Math.sqrt(gxRed * gxRed + gyRed * gyRed);
+                    const edgeValueGreen = Math.sqrt(gxGreen * gxGreen + gyGreen * gyGreen);
+                    const edgeValueBlue = Math.sqrt(gxBlue * gxBlue + gyBlue * gyBlue);
+                    const edgeValue = (edgeValueRed + edgeValueGreen + edgeValueBlue) / 3;
+
+
+                    edgeBuffer[i] = edgeValue;
+                    edgeBuffer[i + 1] = edgeValue;
+                    edgeBuffer[i + 2] = edgeValue;
+                    edgeBuffer[i + 3] = edgeData[i + 3]; // Alpha 값 유지
+                }
+            }
+
+            // 엣지 색상을 검정색으로 변경하고, 원래 이미지와 합성
+            for (let i = 0; i < data.length; i += 4) {
+                if (edgeBuffer[i] > 50) { // 엣지 강도 threshold
+                    data[i] = 0;     // Red
+                    data[i + 1] = 0; // Green
+                    data[i + 2] = 0; // Blue
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+    </script>
+</body>
+</html>
+

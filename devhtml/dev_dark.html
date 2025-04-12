@@ -1,281 +1,331 @@
 <!DOCTYPE html>
 <html lang="ko">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>개발 사이트</title>
     <style>
-        /* 기본 패딩과 마진 초기화 */
-        body,
-        ul,
-        li {
-            padding: 0;
-            margin: 0;
-            list-style: none;
-        }
+      /* 공통 초기화 */
+      body,
+      ul,
+      li {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
 
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
 
-        /* 섹션 래퍼를 위한 플렉스 컨테이너 */
+      /* 레이아웃 */
+      .site-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: 20px;
+        max-width: 1600px;
+        margin: 40px auto;
+      }
+
+      .site-card {
+        flex: 1 1 300px;
+        padding: 20px;
+        border-radius: 10px;
+        font-family: "Consolas", monospace;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .site-card h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      .site-card p {
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+
+      .card-input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0 20px;
+        border-radius: 8px;
+        font: 14px "Consolas", monospace;
+        box-sizing: border-box;
+        height: 80px;
+        resize: none;
+        border: 1px solid;
+      }
+
+      .link-list {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .link-button {
+        font-size: 16px;
+        font-family: "Cascadia Code", monospace;
+        padding: 15px;
+        border: none;
+        border-radius: 20px;
+        transition: background-color 0.4s ease, transform 0.3s ease;
+        width: 100%;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: left;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      .link-button:hover {
+        cursor: pointer;
+        transform: scale(1.05);
+      }
+
+      .theme-toggle-button {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      }
+
+      @media (max-width: 768px) {
         .site-wrapper {
-            display: flex;
-            justify-content: space-around;
-            gap: 20px;
-            max-width: 1600px;
-            margin: 40px auto;
+          flex-direction: column;
+          gap: 40px;
         }
+      }
 
-        /* 각 섹션 카드 */
-        .site-card {
-            flex: 1;
-            padding: 20px;
-            border: 5px solid darkgray;
-            border-radius: 10px;
-            background-color: #f9f9f9;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            font-family: "Consolas", monospace;
-            text-align: center;
-        }
+      /* 🌞 라이트 모드 (조정됨) */
+      body.light-mode {
+        background-color: #f0f0f0; /* 기존 #ffffff → 회색톤으로 변경 */
+        color: #111;
+      }
 
-        .site-card h3 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #333;
-        }
+      body.light-mode .site-card {
+        background-color: #e8e8e8; /* 기존 #f9f9f9 → 약간 어두운 회색 */
+        border: 5px solid #bbb; /* 기존 darkgray → 더 부드러운 회색 */
+      }
 
-        .site-card p {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
-        }
+      body.light-mode .site-card h3 {
+        color: #222;
+      }
 
-        .link-list {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-        }
+      body.light-mode .site-card p {
+        color: #555;
+      }
 
-        .link-button {
-            font-size: 16px;
-            font-family: "Cascadia Code", monospace;
-            padding: 15px;
-            border: none;
-            border-radius: 20px;
-            background-color: lightgray;
-            transition: background-color 0.4s ease, transform 0.3s ease;
-            width: 100%;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+      body.light-mode .card-input {
+        background-color: #fdfdfd;
+        color: #111;
+        border-color: #bbb;
+      }
 
-        .link-button:hover {
-            background-color: #f0e300;
-            cursor: pointer;
-            transform: scale(1.05);
-        }
+      body.light-mode .link-button {
+        background-color: #dcdcdc; /* 기존 lightgray → 부드러운 회색 */
+        color: #000;
+      }
 
-        /* 반응형 레이아웃 */
-        @media (max-width: 768px) {
-            .site-wrapper {
-                flex-direction: column;
-                gap: 40px;
-            }
-        }
+      body.light-mode .link-button:hover {
+        background-color: #e6c800; /* 기존 #f0e300 → 살짝 톤 다운 */
+      }
 
-        /* 다크 모드 */
-        body.dark-mode {
-            background-color: #121212;
-            color: #e0e0e0;
-        }
+      body.light-mode .theme-toggle-button {
+        background-color: #e6c800;
+        color: #000;
+      }
 
-        body.dark-mode .site-card {
-            background-color: #1e1e1e;
-            border-color: #444;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
+      /* 🌙 다크 모드 */
+      body.dark-mode {
+        background-color: #121212;
+        color: #e0e0e0;
+      }
 
-        body.dark-mode .site-card h3 {
-            color: #fff;
-        }
+      body.dark-mode .site-card {
+        background-color: #1e1e1e;
+        border: 5px solid #444;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      }
 
-        body.dark-mode .site-card p {
-            color: #ccc;
-        }
+      body.dark-mode .site-card h3 {
+        color: #fff;
+      }
 
-        body.dark-mode .link-button {
-            background-color: #444;
-            color: #fff;
-        }
+      body.dark-mode .site-card p {
+        color: #ccc;
+      }
 
-        body.dark-mode .link-button:hover {
-            background-color: #888;
-        }
+      body.dark-mode .card-input {
+        background-color: #333;
+        color: #fff;
+        border-color: #666;
+      }
 
-        /* 다크 모드 토글 버튼 */
-        .theme-toggle-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background-color: #f0e300;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
+      body.dark-mode .link-button {
+        background-color: #444;
+        color: #fff;
+      }
 
-        body.dark-mode .theme-toggle-button {
-            background-color: #444;
-            color: white;
-        }
+      body.dark-mode .link-button:hover {
+        background-color: #f0e300;
+        color: #444;
+        justify-content: center;
+      }
+
+      body.dark-mode .theme-toggle-button {
+        background-color: #444;
+        color: #fff;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <button class="theme-toggle-button">🌞 라이트 모드</button>
 
     <div class="site-wrapper">
-        <div class="site-card">
-            <h3>Local Sites</h3>
-            <p>자주 사용하는 로컬 리소스 및 사이트들입니다.</p>
-            <ul class="link-list">
-                <li>
-                    <a href="https://www.daum.net/" target="_blank"><button class="link-button">다음</button></a>
-                </li>
-                <li>
-                    <a href="https://www.naver.com/" target="_blank"><button class="link-button">네이버</button></a>
-                </li>
-                <li>
-                    <a href="https://www.bing.com/" target="_blank"><button class="link-button">빙</button></a>
-                </li>
-                <li>
-                    <a href="https://www.kakao.com/" target="_blank"><button class="link-button">카카오</button></a>
-                </li>
-            </ul>
-        </div>
+      <div class="site-card">
+        <h3>Local Sites</h3>
+        <p>자주 사용하는 로컬 리소스 및 사이트들입니다.</p>
+        <textarea
+          placeholder="메모 또는 링크 추가..."
+          class="card-input"
+        ></textarea>
+        <ul class="link-list">
+          <li>
+            <a href="https://www.daum.net/" target="_blank"
+              ><button class="link-button">다음</button></a
+            >
+          </li>
+          <li>
+            <a href="https://www.naver.com/" target="_blank"
+              ><button class="link-button">네이버</button></a
+            >
+          </li>
+          <li>
+            <a href="https://www.bing.com/" target="_blank"
+              ><button class="link-button">빙</button></a
+            >
+          </li>
+          <li>
+            <a href="https://www.kakao.com/" target="_blank"
+              ><button class="link-button">카카오</button></a
+            >
+          </li>
+        </ul>
+      </div>
 
-        <div class="site-card">
-            <h3>Dev Sites</h3>
-            <p>개발 및 프로그래밍에 유용한 링크들입니다.</p>
-            <ul class="link-list">
-                <li>
-                    <a href="https://www.google.co.kr/" target="_blank"><button class="link-button">구글</button></a>
-                </li>
-                <li>
-                    <a href="https://www.youtube.com/" target="_blank"><button class="link-button">유튜브</button></a>
-                </li>
-                <li>
-                    <a href="https://mvnrepository.com/" target="_blank"><button class="link-button">Maven</button></a>
-                </li>
-                <li>
-                    <a href="https://www.github.com/" target="_blank"><button class="link-button">GitHub</button></a>
-                </li>
-                <li>
-                    <a href="https://www.stackoverflow.com/" target="_blank"><button class="link-button">Stack Overflow</button></a>
-                </li>
-            </ul>
-        </div>
+      <div class="site-card">
+        <h3>Dev Sites</h3>
+        <p>개발 및 프로그래밍에 유용한 링크들입니다.</p>
+        <textarea
+          placeholder="메모 또는 링크 추가..."
+          class="card-input"
+        ></textarea>
+        <ul class="link-list">
+          <li>
+            <a href="https://www.google.co.kr/" target="_blank"
+              ><button class="link-button">구글</button></a
+            >
+          </li>
+          <li>
+            <a href="https://www.youtube.com/" target="_blank"
+              ><button class="link-button">유튜브</button></a
+            >
+          </li>
+          <li>
+            <a href="https://mvnrepository.com/" target="_blank"
+              ><button class="link-button">Maven</button></a
+            >
+          </li>
+          <li>
+            <a href="https://www.github.com/" target="_blank"
+              ><button class="link-button">GitHub</button></a
+            >
+          </li>
+          <li>
+            <a href="https://www.stackoverflow.com/" target="_blank"
+              ><button class="link-button">Stack Overflow</button></a
+            >
+          </li>
+        </ul>
+      </div>
 
-        <div class="site-card">
-            <h3>TEST Sites</h3>
-            <p>테스트 및 개발 목적의 사이트들입니다.</p>
-            <ul class="link-list">
-                <li>
-                    <a href="https://www.example.com/" target="_blank"><button class="link-button">Example</button></a>
-                </li>
-                <li>
-                    <a href="https://www.test.com/" target="_blank"><button class="link-button">Test</button></a>
-                </li>
-                <li>
-                    <a href="https://www.placeholder.com/" target="_blank"><button class="link-button">Placeholder</button></a>
-                </li>
-            </ul>
-        </div>
-
-        <div class="site-card">
-            <h3>News Sites</h3>
-            <p>최신 뉴스와 정보를 제공하는 사이트들입니다.</p>
-            <ul class="link-list">
-                <li>
-                    <a href="https://www.bbc.com/" target="_blank"><button class="link-button">BBC</button></a>
-                </li>
-                <li>
-                    <a href="https://www.cnn.com/" target="_blank"><button class="link-button">CNN</button></a>
-                </li>
-                <li>
-                    <a href="https://www.nytimes.com/" target="_blank"><button class="link-button">NYT</button></a>
-                </li>
-            </ul>
-        </div>
-
-        <div class="site-card">
-            <h3>Social Media</h3>
-            <p>소셜 미디어와 관련된 사이트들입니다.</p>
-            <ul class="link-list">
-                <li>
-                    <a href="https://www.facebook.com/" target="_blank"><button class="link-button">Facebook</button></a>
-                </li>
-                <li>
-                    <a href="https://www.twitter.com/" target="_blank"><button class="link-button">Twitter</button></a>
-                </li>
-                <li>
-                    <a href="https://www.instagram.com/" target="_blank"><button class="link-button">Instagram</button></a>
-                </li>
-            </ul>
-        </div>
-
-        <div class="site-card">
-            <h3>Learning Resources</h3>
-            <p>학습 및 자가 개발을 위한 리소스들입니다.</p>
-            <ul class="link-list">
-                <li>
-                    <a href="https://www.khanacademy.org/" target="_blank"><button class="link-button">Khan Academy</button></a>
-                </li>
-                <li>
-                    <a href="https://www.coursera.org/" target="_blank"><button class="link-button">Coursera</button></a>
-                </li>
-                <li>
-                    <a href="https://www.udemy.com/" target="_blank"><button class="link-button">Udemy</button></a>
-                </li>
-                <li>
-                    <a href="https://www.edx.org/" target="_blank"><button class="link-button">edX</button></a>
-                </li>
-            </ul>
-        </div>
+      <div class="site-card">
+        <h3>TEST Sites</h3>
+        <p>테스트 및 개발 목적의 사이트들입니다.</p>
+        <textarea
+          placeholder="메모 또는 링크 추가..."
+          class="card-input"
+        ></textarea>
+        <ul class="link-list">
+          <li>
+            <a href="https://www.example.com/" target="_blank"
+              ><button class="link-button">Example</button></a
+            >
+          </li>
+          <li>
+            <a href="https://www.test.com/" target="_blank"
+              ><button class="link-button">Test</button></a
+            >
+          </li>
+          <li>
+            <a href="https://www.placeholder.com/" target="_blank"
+              ><button class="link-button">Placeholder</button></a
+            >
+          </li>
+        </ul>
+      </div>
     </div>
 
     <script>
-        // 로컬 스토리지에서 테마 상태를 확인하고 적용
-        const themeToggleButton = document.querySelector('.theme-toggle-button');
-        const savedTheme = localStorage.getItem('theme');
+      const themeToggleButton = document.querySelector(".theme-toggle-button");
 
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-mode');
-            themeToggleButton.textContent = '🌙 다크 모드';
+      // 저장된 테마 적용
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light") {
+        document.body.classList.add("light-mode");
+        document.body.classList.remove("dark-mode");
+        themeToggleButton.textContent = "🌞 라이트 모드";
+      } else {
+        document.body.classList.add("dark-mode");
+        document.body.classList.remove("light-mode");
+        themeToggleButton.textContent = "🌙 다크 모드";
+      }
+
+      // 토글 버튼 이벤트
+      themeToggleButton.addEventListener("click", () => {
+        const isDark = document.body.classList.contains("dark-mode");
+        if (isDark) {
+          document.body.classList.remove("dark-mode");
+          document.body.classList.add("light-mode");
+          themeToggleButton.textContent = "🌞 라이트 모드";
+          localStorage.setItem("theme", "light");
+        } else {
+          document.body.classList.remove("light-mode");
+          document.body.classList.add("dark-mode");
+          themeToggleButton.textContent = "🌙 다크 모드";
+          localStorage.setItem("theme", "dark");
         }
+      });
 
-        // 테마를 수동으로 토글하는 함수
-        themeToggleButton.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDarkModeActive = document.body.classList.contains('dark-mode');
-
-            if (isDarkModeActive) {
-                themeToggleButton.textContent = '🌙 다크 모드';
-                localStorage.setItem('theme', 'dark');
-            } else {
-                themeToggleButton.textContent = '🌞 라이트 모드';
-                localStorage.setItem('theme', 'light');
-            }
+      // 입력값 저장/불러오기
+      const inputFields = document.querySelectorAll(".card-input");
+      inputFields.forEach((input, index) => {
+        const key = `card-input-${index}`;
+        input.value = localStorage.getItem(key) || "";
+        input.addEventListener("input", () => {
+          localStorage.setItem(key, input.value);
         });
+      });
     </script>
-</body>
-
+  </body>
 </html>
