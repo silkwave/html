@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>거래 상태별 처리 기준</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4; /* 밝은 배경색 */
+        color: #333; /* 텍스트 색상 */
+      }
+
+      h1 {
+        text-align: center;
+        margin-top: 20px;
+        color: #4caf50; /* 연두색 텍스트 */
+        font-size: 28px;
+      }
+
+      .table-container {
+        margin: 20px auto;
+        padding: 20px;
+        width: 90%;
+        max-width: 1200px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        border: 1px solid #ddd;
+        overflow-x: auto;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr); /* 5개의 열 */
+        grid-gap: 10px;
+        grid-template-rows: auto;
+      }
+
+      .table-container .header {
+        display: contents;
+        background-color: #4caf50; /* 헤더 배경 */
+        color: white;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .table-container .header div {
+        padding: 12px 20px;
+        border: 1px solid #ddd;
+        text-align: center;
+      }
+
+      .table-container .row {
+        display: contents;
+      }
+
+      .table-container .row div {
+        padding: 12px 20px;
+        border: 1px solid #ddd;
+        background-color: #f9f9f9;
+        text-align: center;
+      }
+
+      .table-container .row:nth-child(even) div {
+        background-color: #f1f1f1; /* 짝수 행 배경 */
+      }
+
+      .table-container .row:hover div {
+        background-color: #e0e0e0; /* 마우스 오버 효과 */
+      }
+
+      .section-header {
+        background-color: #f2f2f2; /* 섹션 헤더 배경 */
+        color: #555;
+        font-weight: bold;
+        text-align: left;
+        padding: 10px 20px;
+        font-size: 18px;
+        border-top: 2px solid #ddd;
+        grid-column: span 5; /* 섹션 헤더가 전체 열을 차지하도록 */
+      }
+
+      .footer {
+        background-color: #4caf50;
+        color: white;
+        text-align: center;
+        padding: 10px;
+        font-weight: bold;
+        border-top: 2px solid #ddd;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>거래 상태별 처리 기준</h1>
+
+    <div class="table-container">
+      <!-- 헤더 -->
+      <div class="header"><div>업무</div></div>
+      <div class="header"><div>원거래 상태</div></div>
+      <div class="header"><div>상태코드</div></div>
+      <div class="header"><div>조치</div></div>
+      <div class="header"><div>비고</div></div>
+
+      <!-- 조회 -->
+      <div class="section-header">조회</div>
+      <div class="row">
+        <div>조회</div>
+        <div>존재</div>
+        <div>정상, 오류, 처리중</div>
+        <div>전문을 Drop 처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div>미존재</div>
+        <div></div>
+        <div>조회 업무 처리</div>
+        <div></div>
+      </div>
+
+      <!-- 입금 -->
+      <div class="section-header">입금</div>
+      <div class="row">
+        <div>입금</div>
+        <div>존재</div>
+        <div>입금정상</div>
+        <div>원거래 응답처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>입금오류</div>
+        <div>원거래 응답처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>입금처리중</div>
+        <div>원거래 응답처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div>미존재</div>
+        <div></div>
+        <div>입금정상 처리</div>
+        <div></div>
+      </div>
+
+      <!-- 입금취소 -->
+      <div class="section-header">입금취소</div>
+      <div class="row">
+        <div>입금취소</div>
+        <div>존재</div>
+        <div>입금정상</div>
+        <div>입금 취소 처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>입금취소오류</div>
+        <div>전문을 Drop 처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>입금처리중</div>
+        <div>원거래 응답처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>입금취소처리중</div>
+        <div>전문을 Drop 처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>입금취소정상</div>
+        <div>원거래 응답처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div>미존재</div>
+        <div></div>
+        <div>원거래 없음 응답처리</div>
+        <div>있으면 안 되는 상황</div>
+      </div>
+
+      <!-- 출금 -->
+      <div class="section-header">출금</div>
+      <div class="row">
+        <div>출금</div>
+        <div>존재</div>
+        <div>존재하면</div>
+        <div>원거래 체크</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div>미존재</div>
+        <div></div>
+        <div>전문을 Drop 처리</div>
+        <div>취소전문 들어옴</div>
+      </div>
+
+      <!-- 출금취소 -->
+      <div class="section-header">출금취소</div>
+      <div class="row">
+        <div>출금취소</div>
+        <div>존재</div>
+        <div>출금정상</div>
+        <div>출금 취소 처리</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>출금처리중</div>
+        <div>전문을 Drop 처리</div>
+        <div>취소전문 들어옴</div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>출금취소처리중</div>
+        <div>전문을 Drop 처리</div>
+        <div>취소전문 들어옴</div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>출금취소정상</div>
+        <div>출금취소정상 전문 응답</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div></div>
+        <div>출금오류</div>
+        <div>출금취소정상 전문 응답 및 저장</div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div></div>
+        <div>미존재</div>
+        <div>출금취소정상</div>
+        <div>출금취소정상 전문 저장</div>
+        <div>출금 전문 역전 대비</div>
+      </div>
+    </div>
+
+    <div class="footer">거래 상태별 처리 기준</div>
+  </body>
+</html>
