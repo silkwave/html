@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSON & Java JSON String 변환기</title>
+    <style>
+        textarea {
+            width: 100%;
+            height: 120px;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+        #output, #stringOutput, #oneLineOutput {
+            white-space: pre-wrap;
+            background: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 80px;
+            margin-bottom: 10px;
+        }
+        button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>JSON <> Java JSON String 변환기</h1>
+
+<label for="jsonInput">JSON 문자열 입력 (Java JSON String 형태)</label><br>
+<textarea id="jsonInput" placeholder='예: {
+  "common": {
+    "name": "홍길동",
+    "age": 30
+  },
+  "detail": {
+    "email": "hong@example.com",
+    "job": "개발자"
+  }
+}'></textarea>
+
+<button id="parseBtn">파싱하기 (JSON → Object 출력)</button>
+<button id="stringifyBtn">문자열로 변환하기 (Object → Java JSON String)</button>
+<button id="oneLineBtn">한 줄 Java 문자열 변환 (escape 처리)</button>
+
+<h3>파싱 결과 (객체 출력)</h3>
+<div id="output"></div>
+
+<h3>문자열 변환 결과 (Java JSON String 형태)</h3>
+<div id="stringOutput"></div>
+
+<h3>한 줄 Java 문자열 출력</h3>
+<div id="oneLineOutput"></div>
+
+<script>
+    const jsonInput = document.getElementById('jsonInput');
+    const output = document.getElementById('output');
+    const stringOutput = document.getElementById('stringOutput');
+    const oneLineOutput = document.getElementById('oneLineOutput');
+    const parseBtn = document.getElementById('parseBtn');
+    const stringifyBtn = document.getElementById('stringifyBtn');
+    const oneLineBtn = document.getElementById('oneLineBtn');
+
+    let parsedObject = null;
+
+    parseBtn.addEventListener('click', () => {
+        const inputStr = jsonInput.value.trim();
+        try {
+            parsedObject = JSON.parse(inputStr);
+            output.textContent = JSON.stringify(parsedObject, null, 2);
+            stringOutput.textContent = '';
+            oneLineOutput.textContent = '';
+        } catch (e) {
+            output.textContent = 'JSON 파싱 오류: ' + e.message;
+            stringOutput.textContent = '';
+            oneLineOutput.textContent = '';
+            parsedObject = null;
+        }
+    });
+
+    stringifyBtn.addEventListener('click', () => {
+        if (!parsedObject) {
+            stringOutput.textContent = '먼저 JSON을 파싱하세요.';
+            return;
+        }
+
+        let javaString = JSON.stringify(parsedObject, null, 2)
+            .replace(/\\/g, '\\\\')  // 역슬래시 이스케이프
+            .replace(/"/g, '\\"')    // 쌍따옴표 이스케이프
+            .replace(/\n/g, '\\n"\n+ "');
+
+        javaString = '"' + javaString + '"';
+
+        stringOutput.textContent = javaString;
+        oneLineOutput.textContent = '';
+    });
+
+    oneLineBtn.addEventListener('click', () => {
+        if (!parsedObject) {
+            oneLineOutput.textContent = '먼저 JSON을 파싱하세요.';
+            return;
+        }
+
+        // 한 줄 Java 문자열 : 줄바꿈 없이 \n 문자 포함, 쌍따옴표 이스케이프, 역슬래시 이스케이프
+        let oneLineStr = JSON.stringify(parsedObject)
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"');
+
+        oneLineStr = '"' + oneLineStr + '"';
+
+        oneLineOutput.textContent = oneLineStr;
+    });
+</script>
+
+</body>
+</html>
+
+
+
