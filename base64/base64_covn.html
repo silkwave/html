@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Base64 MS949 디코딩 및 파일 저장</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    textarea, input[type="text"] {
+      width: 80%; max-width: 600px; padding: 10px;
+      margin-bottom: 10px; border: 1px solid #ccc;
+      box-sizing: border-box; font-size: 1rem;
+    }
+    input[type="text"] { width: 50%; }
+    button {
+      padding: 10px 15px; background-color: #007bff;
+      color: white; border: none; cursor: pointer; font-size: 1rem;
+    }
+    button:hover { background-color: #0056b3; }
+    .message { margin-top: 10px; font-weight: bold; }
+    .message.error { color: red; }
+    .message.success { color: green; }
+    pre {
+      background: #f8f8f8; padding: 10px; border: 1px solid #ccc;
+      white-space: pre-wrap; font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Base64 MS949 디코딩 및 파일 저장</h1>
+
+  <label>Base64 문자열 입력 (MS949 인코딩 기반):</label><br />
+  <textarea id="base64Input" placeholder="Base64 문자열 입력">vsiz58fPvLy/5A==</textarea><br />
+
+  <label>파일 업로드 (.c 파일 → Base64 변환):</label><br />
+  <input type="file" id="fileInput" accept=".c" /><br />
+
+  <label>저장할 파일 이름:</label><br />
+  <input type="text" id="filenameInput" value="decoded_output.c" /><br />
+
+  <button id="decodeBtn">디코딩하여 파일로 저장</button>
+
+  <div id="message" class="message"></div>
+
+  <h3>🔎 Base64 디코딩 미리보기</h3>
+  <pre id="preview">디코딩 결과가 여기에 표시됩니다...</pre>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    const base64Input = $('base64Input');
+    const filenameInput = $('filenameInput');
+    const messageDiv = $('message');
+    const preview = $('preview');
+    const fileInput = $('fileInput');
+    const decodeBtn = $('decodeBtn');
+
+    const showMessage = (text, isError = false) => {
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${isError ? 'error' : 'success'}`;
+    };
+
+    const base64ToUint8Array = base64 => {
+      try {
+        const binary = atob(base64);
+        return Uint8Array.from(binary, char => char.charCodeAt(0));
+      } catch {
+        return null;
+      }
+    };
+
+    const decodeBytes = bytes => {
+      const decode = (encoding) => {
+        try {
+          return new TextDecoder(encoding).decode(bytes);
+        } catch {
+          return `[${encoding.toUpperCase()} 디코딩 실패]`;
+        }
+      };
+      return {
+        utf8: decode('utf-8'),
+        ms949: decode('windows-949')
+      };
+    };
+
+    const downloadFile = (content, filename) => {
+      const blob = new Blob([content], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    };
+
+    const decodeAndSave = () => {
+      showMessage('');
+      preview.textContent = '';
+
+      const base64Str = base64Input.value.trim();
+      const filename = filenameInput.value.trim();
+
+      if (!base64Str) return showMessage('Base64 문자열을 입력해주세요.', true);
+      if (!filename) return showMessage('저장할 파일 이름을 입력해주세요.', true);
+
+      const bytes = base64ToUint8Array(base64Str);
+      if (!bytes) return showMessage('Base64 디코딩 실패. 유효한 문자열인지 확인해주세요.', true);
+
+      const { utf8, ms949 } = decodeBytes(bytes);
+      preview.textContent = `[UTF-8 해석]\n${utf8}\n\n[MS949 해석]\n${ms949}`;
+
+      downloadFile(bytes, filename);
+      showMessage(`'${filename}' 파일이 성공적으로 생성되었습니다.`);
+    };
+
+    const handleFileUpload = () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const binary = new Uint8Array(e.target.result);
+        const base64 = btoa(String.fromCharCode(...binary));
+        base64Input.value = base64;
+        showMessage('파일이 Base64로 변환되어 입력란에 삽입되었습니다.');
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    decodeBtn.addEventListener('click', decodeAndSave);
+    fileInput.addEventListener('change', handleFileUpload);
+  </script>
+</body>
+</html>
