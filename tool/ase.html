@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AES-128 CBC 암호화/복호화</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      textarea,
+      input {
+        width: 100%;
+        margin-top: 5px;
+        margin-bottom: 15px;
+        font-size: 14px;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      textarea {
+        min-height: 70px;
+        resize: vertical;
+      }
+      button {
+        padding: 10px;
+        font-size: 14px;
+        margin-right: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>AES-128 CBC 암호화 / 복호화</h2>
+
+    <!-- 키 입력창: 최대 16바이트, IV는 키와 동일하게 사용 -->
+    <label>키 (최대 16바이트, IV도 동일값 사용)</label>
+    <input type="text" id="key" value="1234567890123456" maxlength="32" />
+
+    <!-- 암호화할 평문 입력창 -->
+    <label>평문 (암호화할 내용)</label>
+    <textarea id="plainText">안녕하세요 AES 테스트입니다!</textarea>
+
+    <!-- 복호화할 Base64 암호문 입력창 -->
+    <label>암호문 (Base64, 복호화할 암호문)</label>
+    <textarea id="cipherText"></textarea>
+
+    <div>
+      <button onclick="encrypt()">🔒 암호화</button>
+      <button onclick="decrypt()">🔓 복호화</button>
+    </div>
+
+    <!-- 암호화 또는 복호화 결과 출력 -->
+    <label>결과</label>
+    <textarea id="result" readonly></textarea>
+
+    <script>
+      // 문자열을 Uint8Array로 변환 (UTF-8 인코딩)
+      function strToBuffer(str) {
+        return new TextEncoder().encode(str);
+      }
+
+      // Base64 문자열을 ArrayBuffer로 변환
+      function base64ToBuffer(base64) {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+      }
+
+      // ArrayBuffer를 Base64 문자열로 변환
+      function bufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        bytes.forEach((b) => (binary += String.fromCharCode(b)));
+        return btoa(binary);
+      }
+
+      // 키를 16바이트로 자르거나 공백으로 채워서 처리 (AES-128)
+      function getKeyAndIV(keyStr) {
+        const trimmed = keyStr.slice(0, 16); // 최대 16바이트 자르기
+        const keyBuf = strToBuffer(trimmed.padEnd(16, " ")); // 부족하면 공백으로 채움
+        return keyBuf;
+      }
+
+      // 암호화 함수
+      async function encrypt() {
+        const plainText = document.getElementById("plainText").value;
+        const keyStr = document.getElementById("key").value;
+        const key = getKeyAndIV(keyStr);
+        const iv = key; // IV는 키와 동일하게 사용
+        const data = strToBuffer(plainText);
+
+        try {
+          // 암호화 키 가져오기
+          const cryptoKey = await crypto.subtle.importKey(
+            "raw",
+            key,
+            { name: "AES-CBC" },
+            false,
+            ["encrypt"]
+          );
+
+          // 암호화 실행
+          const encrypted = await crypto.subtle.encrypt(
+            { name: "AES-CBC", iv },
+            cryptoKey,
+            data
+          );
+
+          // Base64 인코딩 후 출력
+          const base64 = bufferToBase64(encrypted);
+          document.getElementById("cipherText").value = base64;
+          document.getElementById("result").value =
+            "🔐 암호화 완료:\n" + base64;
+        } catch (e) {
+          document.getElementById("result").value =
+            "❌ 암호화 실패: " + e.message;
+        }
+      }
+
+      // 복호화 함수
+      async function decrypt() {
+        const base64 = document.getElementById("cipherText").value.trim();
+        const keyStr = document.getElementById("key").value;
+        const key = getKeyAndIV(keyStr);
+        const iv = key; // IV도 키와 동일
+        const cipherBytes = base64ToBuffer(base64);
+
+        try {
+          // 복호화 키 가져오기
+          const cryptoKey = await crypto.subtle.importKey(
+            "raw",
+            key,
+            { name: "AES-CBC" },
+            false,
+            ["decrypt"]
+          );
+
+          // 복호화 실행
+          const decrypted = await crypto.subtle.decrypt(
+            { name: "AES-CBC", iv },
+            cryptoKey,
+            cipherBytes
+          );
+
+          // UTF-8 디코딩하여 출력
+          const resultText = new TextDecoder().decode(decrypted);
+          document.getElementById("plainText").value = resultText;
+          document.getElementById("result").value =
+            "✅ 복호화 성공:\n" + resultText;
+        } catch (e) {
+          document.getElementById("result").value =
+            "❌ 복호화 실패: 암호문 또는 키 확인 필요";
+        }
+      }
+    </script>
+  </body>
+</html>
