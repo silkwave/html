@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <title>바둑 - 자살수 + 사활 판정</title>
+    <title>바둑 - 자살수 + 사활 판정 + 숫자 표시 + Undo + 힌돌 AI + 깜박임</title>
     <style>
       body {
         font-family: sans-serif;
@@ -15,30 +15,45 @@
         margin-top: 10px;
         font-size: 18px;
       }
+      button {
+        margin-top: 10px;
+        margin-right: 5px;
+        font-size: 16px;
+      }
     </style>
   </head>
   <body>
-    <h2>바둑 (자살수 금지 + 사활 판정)</h2>
+    <h2>바둑 (자살수 금지 + 사활 판정 + 숫자 표시 + Undo + 힌돌 AI + 깜박임)</h2>
     <canvas id="board" width="570" height="570"></canvas>
     <div id="status">흑 차례</div>
     <button onclick="checkLife()">사활 판정</button>
+    <button onclick="undo()">Undo</button>
+    <button onclick="pass()">패스</button>
 
     <script>
-      const SIZE = 19; // 바둑판 크기 19x19
-      const CELL = 30; // 한 칸 크기 (픽셀)
-      const OFFSET = CELL; // 바둑판 시작 위치 좌표 오프셋
+      const SIZE = 19; 
+      const CELL = 30; 
+      const OFFSET = CELL; 
       const canvas = document.getElementById("board");
       const ctx = canvas.getContext("2d");
       const status = document.getElementById("status");
 
-      let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0)); // 0=빈칸, 1=흑돌, 2=백돌
-      let currentPlayer = 1; // 현재 플레이어: 1=흑, 2=백
+      let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+      let orderBoard = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
 
-      // 바둑판과 돌 그리기
+      let currentPlayer = 1; // 흑: 사람, 백: AI
+      let moveCount = 0;
+      let history = [];
+
+      let passCount = 0; // 연속 패스 체크
+
+      // 깜박임 관련 변수
+      let blinkPosition = null;
+      let blinkOpacity = 1;
+      let blinkIntervalId = null;
+
       function drawBoard() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // 가로줄과 세로줄 그리기
         for (let i = 0; i < SIZE; i++) {
           ctx.beginPath();
           ctx.moveTo(OFFSET, OFFSET + i * CELL);
@@ -50,8 +65,6 @@
           ctx.lineTo(OFFSET + i * CELL, OFFSET + (SIZE - 1) * CELL);
           ctx.stroke();
         }
-
-        // 별점 위치에 작은 점 그리기
         const starPoints = [3, 9, 15];
         for (let x of starPoints) {
           for (let y of starPoints) {
@@ -60,47 +73,48 @@
             ctx.fill();
           }
         }
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "16px sans-serif";
 
-        // 돌 그리기
         for (let y = 0; y < SIZE; y++) {
           for (let x = 0; x < SIZE; x++) {
             if (board[y][x] !== 0) {
-              drawStone(x, y, board[y][x]);
+              if (blinkPosition && blinkPosition.x === x && blinkPosition.y === y) {
+                ctx.globalAlpha = blinkOpacity;
+                drawStone(x, y, board[y][x]);
+                ctx.globalAlpha = 1;
+              } else {
+                drawStone(x, y, board[y][x]);
+              }
+              const num = orderBoard[y][x];
+              if (num > 0) {
+                ctx.fillStyle = board[y][x] === 1 ? "white" : "black";
+                ctx.fillText(num, OFFSET + x * CELL, OFFSET + y * CELL);
+              }
             }
           }
         }
       }
 
-      // 한 칸에 돌 그리기
       function drawStone(x, y, player) {
         ctx.beginPath();
-        ctx.arc(
-          OFFSET + x * CELL,
-          OFFSET + y * CELL,
-          CELL / 2 - 2,
-          0,
-          Math.PI * 2
-        );
-        ctx.fillStyle = player === 1 ? "black" : "white"; // 흑돌은 검정, 백돌은 흰색
+        ctx.arc(OFFSET + x * CELL, OFFSET + y * CELL, CELL / 2 - 2, 0, Math.PI * 2);
+        ctx.fillStyle = player === 1 ? "black" : "white";
         ctx.fill();
         ctx.stroke();
       }
 
-      // 특정 위치 돌 그룹과 그 그룹의 활로(자유로) 수 계산
       function getGroupAndLiberties(x, y) {
-        const color = board[y][x]; // 돌 색깔
-        let visited = Array.from({ length: SIZE }, () =>
-          Array(SIZE).fill(false)
-        ); // 방문 체크
-        let group = []; // 그룹에 속한 좌표 배열
-        let liberties = 0; // 활로(빈 칸) 수
+        const color = board[y][x];
+        let visited = Array.from({ length: SIZE }, () => Array(SIZE).fill(false));
+        let group = [];
+        let liberties = 0;
 
         function dfs(cx, cy) {
           if (visited[cy][cx]) return;
           visited[cy][cx] = true;
           group.push([cx, cy]);
-
-          // 상하좌우 탐색
           const dirs = [
             [1, 0],
             [-1, 0],
@@ -113,9 +127,9 @@
             if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue;
 
             if (board[ny][nx] === 0) {
-              liberties++; // 빈 칸이면 활로 증가
+              liberties++;
             } else if (board[ny][nx] === color) {
-              dfs(nx, ny); // 같은 색 돌이면 재귀 탐색
+              dfs(nx, ny);
             }
           }
         }
@@ -124,7 +138,6 @@
         return { group, liberties };
       }
 
-      // 눈 개수 계산
       function getEyesCount(group, color) {
         let eyes = 0;
         let checked = new Set();
@@ -152,7 +165,6 @@
         return eyes;
       }
 
-      // 특정 빈 칸이 해당 색 돌의 눈인지 판별
       function isEye(x, y, color) {
         const dirs = [
           [1, 0],
@@ -169,30 +181,45 @@
         return true;
       }
 
-      // 돌 그룹 제거
       function removeGroup(group) {
         for (let [x, y] of group) {
           board[y][x] = 0;
+          orderBoard[y][x] = 0;
         }
       }
 
-      // 바둑판 클릭 처리: 돌 놓기 및 자살수, 포획 처리
       function handleClick(e) {
+        if (currentPlayer !== 1) return;
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
-
-        // 클릭 좌표를 바둑판 좌표로 변환
         const x = Math.round((mx - OFFSET) / CELL);
         const y = Math.round((my - OFFSET) / CELL);
-
-        // 범위 벗어나거나 이미 돌이 있으면 무시
         if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
         if (board[y][x] !== 0) return;
 
-        board[y][x] = currentPlayer; // 돌 놓기
+        if (!placeStone(x, y, currentPlayer)) {
+          alert("자살수입니다!");
+          return;
+        }
+        passCount = 0;
 
-        // 인접한 상대 돌 그룹 포획 처리
+        startBlink(x, y);
+
+        currentPlayer = 3 - currentPlayer;
+        status.textContent = (currentPlayer === 1 ? "흑" : "백") + " 차례";
+        drawBoard();
+
+        if (currentPlayer === 2) {
+          setTimeout(aiMove, 300);
+        }
+      }
+
+      function placeStone(x, y, player) {
+        board[y][x] = player;
+        moveCount++;
+        orderBoard[y][x] = moveCount;
+
         const dirs = [
           [1, 0],
           [-1, 0],
@@ -200,37 +227,105 @@
           [0, -1],
         ];
         let captured = false;
+        let capturedGroups = [];
+
         for (let [dx, dy] of dirs) {
           const nx = x + dx;
           const ny = y + dy;
           if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue;
 
-          if (board[ny][nx] === 3 - currentPlayer) {
+          if (board[ny][nx] === 3 - player) {
             const { group, liberties } = getGroupAndLiberties(nx, ny);
             if (liberties === 0) {
               removeGroup(group);
               captured = true;
+              capturedGroups.push(group);
             }
           }
         }
 
-        // 자살수 체크: 상대 돌을 포획하지 못했고, 자신의 활로가 0이면 착수 취소
         const { liberties } = getGroupAndLiberties(x, y);
         if (!captured && liberties === 0) {
           board[y][x] = 0;
-          alert("자살수입니다!");
-          drawBoard();
+          orderBoard[y][x] = 0;
+          moveCount--;
+          return false;
+        }
+
+        history.push({ x, y, player, capturedGroups, order: moveCount });
+        return true;
+      }
+
+      function aiMove() {
+        let candidates = [];
+        for (let y = 0; y < SIZE; y++) {
+          for (let x = 0; x < SIZE; x++) {
+            if (board[y][x] !== 0) continue;
+            board[y][x] = currentPlayer;
+            const { liberties } = getGroupAndLiberties(x, y);
+            board[y][x] = 0;
+            if (liberties > 0) {
+              candidates.push([x, y]);
+            }
+          }
+        }
+
+        if (candidates.length === 0) {
+          alert("AI도 착수할 곳이 없습니다. 패스합니다.");
+          pass();
           return;
         }
 
-        // 차례 변경 및 상태 업데이트
+        const [x, y] = candidates[Math.floor(Math.random() * candidates.length)];
+        placeStone(x, y, currentPlayer);
+
+        startBlink(x, y);
+
+        passCount = 0;
         currentPlayer = 3 - currentPlayer;
         status.textContent = (currentPlayer === 1 ? "흑" : "백") + " 차례";
-
         drawBoard();
       }
 
-      // 사활 판정 버튼 클릭 시 실행: 살아있는 그룹과 죽은 그룹 판별
+      function undo() {
+        if (history.length === 0) {
+          alert("더 이상 되돌릴 수 없습니다.");
+          return;
+        }
+        undoOnce();
+        undoOnce();
+        drawBoard();
+      }
+      function undoOnce() {
+        if (history.length === 0) return;
+        const lastMove = history.pop();
+        const { x, y, player, capturedGroups, order } = lastMove;
+        board[y][x] = 0;
+        orderBoard[y][x] = 0;
+        moveCount--;
+        for (let group of capturedGroups) {
+          for (let [gx, gy] of group) {
+            board[gy][gx] = 3 - player;
+            orderBoard[gy][gx] = 0;
+          }
+        }
+        currentPlayer = player;
+        status.textContent = (currentPlayer === 1 ? "흑" : "백") + " 차례";
+      }
+
+      function pass() {
+        passCount++;
+        if (passCount >= 2) {
+          alert("두 플레이어 모두 패스했습니다. 게임 종료.");
+        } else {
+          currentPlayer = 3 - currentPlayer;
+          status.textContent = (currentPlayer === 1 ? "흑" : "백") + " 차례";
+          if (currentPlayer === 2) {
+            setTimeout(aiMove, 300);
+          }
+        }
+      }
+
       function checkLife() {
         let alive = [];
         let dead = [];
@@ -244,7 +339,6 @@
               const { group } = getGroupAndLiberties(x, y);
               group.forEach(([gx, gy]) => (visited[gy][gx] = true));
 
-              // 눈 개수 2개 이상이면 살아있음, 아니면 죽음으로 간주
               const eyes = getEyesCount(group, board[y][x]);
               if (eyes >= 2) alive.push(group);
               else dead.push(group);
@@ -253,6 +347,43 @@
         }
 
         alert(`살아있는 그룹: ${alive.length}, 죽은 그룹: ${dead.length}`);
+      }
+
+      // 깜박임 애니메이션 시작
+      function startBlink(x, y) {
+        blinkPosition = { x, y };
+        blinkOpacity = 1;
+        if (blinkIntervalId) clearInterval(blinkIntervalId);
+
+        let fadeOut = true;
+        let elapsed = 0;
+        const blinkDuration = 500;
+        const intervalMs = 50;
+
+        blinkIntervalId = setInterval(() => {
+          if (fadeOut) {
+            blinkOpacity -= 0.15;
+            if (blinkOpacity <= 0.2) {
+              blinkOpacity = 0.2;
+              fadeOut = false;
+            }
+          } else {
+            blinkOpacity += 0.15;
+            if (blinkOpacity >= 1) {
+              blinkOpacity = 1;
+              fadeOut = true;
+            }
+          }
+          elapsed += intervalMs;
+          drawBoard();
+
+          if (elapsed >= blinkDuration) {
+            clearInterval(blinkIntervalId);
+            blinkIntervalId = null;
+            blinkPosition = null;
+            drawBoard();
+          }
+        }, intervalMs);
       }
 
       canvas.addEventListener("click", handleClick);
