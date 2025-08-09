@@ -1,160 +1,217 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <title>JWT 생성 / 검증</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    textarea, input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-      font-family: monospace;
-    }
-    button {
-      padding: 6px 12px;
-      margin-right: 5px;
-    }
-    pre {
-      background: #f9f9f9;
-      padding: 8px;
-      border: 1px solid #ccc;
-      overflow-x: auto;
-    }
-    .string { color: green; }
-    .number { color: darkorange; }
-    .boolean { color: blue; }
-    .null { color: magenta; }
-    .key { color: brown; }
-  </style>
-</head>
-<body>
-  <h1>🔐 JWT 생성 / 검증</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <title>JWT 생성 / 검증</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      textarea,
+      input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        font-family: monospace;
+      }
+      button {
+        padding: 6px 12px;
+        margin-right: 5px;
+      }
+      pre {
+        background: #f9f9f9;
+        padding: 8px;
+        border: 1px solid #ccc;
+        overflow-x: auto;
+      }
+      .string {
+        color: green;
+      }
+      .number {
+        color: darkorange;
+      }
+      .boolean {
+        color: blue;
+      }
+      .null {
+        color: magenta;
+      }
+      .key {
+        color: brown;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔐 JWT 생성 / 검증</h1>
 
-  <textarea id="jwtHeader" rows="4">{
+    <textarea id="jwtHeader" rows="4">
+{
   "alg": "HS256",
   "typ": "JWT"
-}</textarea>
+}</textarea
+    >
 
-  <textarea id="jwtPayload" rows="6">{
+    <textarea id="jwtPayload" rows="6">
+{
   "sub": "1234567890",
   "iss": "test.com",
   "https://test.com/jwt": true,
   "exp": "1485270000000",
   "name": "hong-gildong"
-}</textarea>
+}</textarea
+    >
 
-  <input id="secretKey" type="text" value="my-secret-key" placeholder="Secret Key" />
+    <input
+      id="secretKey"
+      type="text"
+      value="my-secret-key"
+      placeholder="Secret Key"
+    />
 
-  <div>
-    <button onclick="generateJWT()">JWT 생성</button>
-    <button onclick="verifyJWT()">JWT 검증</button>
-  </div>
+    <div>
+      <button onclick="generateJWT()">JWT 생성</button>
+      <button onclick="verifyJWT()">JWT 검증</button>
+    </div>
 
-  <textarea id="jwtToken" rows="3" readonly></textarea>
+    <textarea id="jwtToken" rows="3" readonly></textarea>
 
-  <h3>Header (디코딩)</h3>
-  <pre id="headerPart"></pre>
+    <h3>Header (디코딩)</h3>
+    <pre id="headerPart"></pre>
 
-  <h3>Payload (디코딩)</h3>
-  <pre id="payloadPart"></pre>
+    <h3>Payload (디코딩)</h3>
+    <pre id="payloadPart"></pre>
 
-  <h3>Signature</h3>
-  <pre id="signaturePart">🔒 복호화 불가 – 검증 전용</pre>
+    <h3>Signature</h3>
+    <pre id="signaturePart">🔒 복호화 불가 – 검증 전용</pre>
 
-  <h3>검증 결과</h3>
-  <pre id="verifyResult">아직 검증되지 않았습니다.</pre>
+    <h3>검증 결과</h3>
+    <pre id="verifyResult">아직 검증되지 않았습니다.</pre>
 
-  <script>
-    function base64UrlEncode(str) {
-      return btoa(str).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-    }
-    function base64UrlDecode(str) {
-      str = str.replace(/-/g, "+").replace(/_/g, "/");
-      let pad = str.length % 4;
-      if (pad) str += "=".repeat(4 - pad);
-      return atob(str);
-    }
-    async function hmacSHA256(key, data) {
-      const enc = new TextEncoder();
-      const cryptoKey = await crypto.subtle.importKey(
-        "raw",
-        enc.encode(key),
-        { name: "HMAC", hash: { name: "SHA-256" } },
-        false,
-        ["sign", "verify"]
-      );
-      const signature = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(data));
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
-      return b64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-    }
-    function syntaxHighlight(json) {
-      if (typeof json != "string") json = JSON.stringify(json, undefined, 2);
-      json = json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      return json.replace(
-        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d+)?)/g,
-        function (match) {
-          let cls = "number";
-          if (/^"/.test(match)) {
-            cls = /:$/.test(match) ? "key" : "string";
-          } else if (/true|false/.test(match)) {
-            cls = "boolean";
-          } else if (/null/.test(match)) {
-            cls = "null";
+    <script>
+      function base64UrlEncode(str) {
+        return btoa(str)
+          .replace(/=/g, "")
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_");
+      }
+
+      function base64UrlDecode(str) {
+        str = str.replace(/-/g, "+").replace(/_/g, "/");
+        let pad = str.length % 4;
+        if (pad) str += "=".repeat(4 - pad);
+        return atob(str);
+      }
+
+      async function hmacSHA256(key, data) {
+        const enc = new TextEncoder();
+        const cryptoKey = await crypto.subtle.importKey(
+          "raw",
+          enc.encode(key),
+          { name: "HMAC", hash: { name: "SHA-256" } },
+          false,
+          ["sign", "verify"]
+        );
+        const signature = await crypto.subtle.sign(
+          "HMAC",
+          cryptoKey,
+          enc.encode(data)
+        );
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+        return b64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+      }
+
+      function syntaxHighlight(json) {
+        if (typeof json != "string") json = JSON.stringify(json, undefined, 2);
+        json = json
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        return json.replace(
+          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d+)?)/g,
+          function (match) {
+            let cls = "number";
+            if (/^"/.test(match)) {
+              cls = /:$/.test(match) ? "key" : "string";
+            } else if (/true|false/.test(match)) {
+              cls = "boolean";
+            } else if (/null/.test(match)) {
+              cls = "null";
+            }
+            return `<span class="${cls}">${match}</span>`;
           }
-          return `<span class="${cls}">${match}</span>`;
+        );
+      }
+
+      async function generateJWT() {
+        const header = JSON.stringify(
+          JSON.parse(document.getElementById("jwtHeader").value)
+        );
+        const payload = JSON.stringify(
+          JSON.parse(document.getElementById("jwtPayload").value)
+        );
+        const secret = document.getElementById("secretKey").value;
+
+        const encodedHeader = base64UrlEncode(header);
+        const encodedPayload = base64UrlEncode(payload);
+        const signature = await hmacSHA256(
+          secret,
+          `${encodedHeader}.${encodedPayload}`
+        );
+        const token = `${encodedHeader}.${encodedPayload}.${signature}`;
+
+        document.getElementById("jwtToken").value = token;
+        document.getElementById("headerPart").innerHTML = syntaxHighlight(
+          JSON.parse(header)
+        );
+        document.getElementById("payloadPart").innerHTML = syntaxHighlight(
+          JSON.parse(payload)
+        );
+        document.getElementById(
+          "signaturePart"
+        ).textContent = `${signature}\n(🔒 복호화 불가 – 검증 전용)`;
+      }
+      
+      async function verifyJWT() {
+        const token = document.getElementById("jwtToken").value.trim();
+        const secret = document.getElementById("secretKey").value;
+        const resultBox = document.getElementById("verifyResult");
+
+        if (!token) {
+          resultBox.textContent = "❌ JWT가 없습니다.";
+          return;
         }
-      );
-    }
-    async function generateJWT() {
-      const header = JSON.stringify(JSON.parse(document.getElementById("jwtHeader").value));
-      const payload = JSON.stringify(JSON.parse(document.getElementById("jwtPayload").value));
-      const secret = document.getElementById("secretKey").value;
+        const parts = token.split(".");
+        if (parts.length !== 3) {
+          resultBox.textContent = "❌ JWT 형식이 올바르지 않습니다.";
+          return;
+        }
+        const [headerB64, payloadB64, signature] = parts;
+        const expectedSig = await hmacSHA256(
+          secret,
+          `${headerB64}.${payloadB64}`
+        );
 
-      const encodedHeader = base64UrlEncode(header);
-      const encodedPayload = base64UrlEncode(payload);
-      const signature = await hmacSHA256(secret, `${encodedHeader}.${encodedPayload}`);
-      const token = `${encodedHeader}.${encodedPayload}.${signature}`;
+        document.getElementById("headerPart").innerHTML = syntaxHighlight(
+          JSON.parse(base64UrlDecode(headerB64))
+        );
+        document.getElementById("payloadPart").innerHTML = syntaxHighlight(
+          JSON.parse(base64UrlDecode(payloadB64))
+        );
 
-      document.getElementById("jwtToken").value = token;
-      document.getElementById("headerPart").innerHTML = syntaxHighlight(JSON.parse(header));
-      document.getElementById("payloadPart").innerHTML = syntaxHighlight(JSON.parse(payload));
-      document.getElementById("signaturePart").textContent = `${signature}\n(🔒 복호화 불가 – 검증 전용)`;
-    }
-    async function verifyJWT() {
-      const token = document.getElementById("jwtToken").value.trim();
-      const secret = document.getElementById("secretKey").value;
-      const resultBox = document.getElementById("verifyResult");
-
-      if (!token) {
-        resultBox.textContent = "❌ JWT가 없습니다.";
-        return;
+        if (signature === expectedSig) {
+          resultBox.innerHTML =
+            "✅ 검증 성공\n" +
+            syntaxHighlight(JSON.parse(base64UrlDecode(payloadB64)));
+        } else {
+          resultBox.textContent = "❌ 검증 실패 - 서명이 일치하지 않습니다.";
+        }
       }
-      const parts = token.split(".");
-      if (parts.length !== 3) {
-        resultBox.textContent = "❌ JWT 형식이 올바르지 않습니다.";
-        return;
-      }
-      const [headerB64, payloadB64, signature] = parts;
-      const expectedSig = await hmacSHA256(secret, `${headerB64}.${payloadB64}`);
-
-      document.getElementById("headerPart").innerHTML = syntaxHighlight(JSON.parse(base64UrlDecode(headerB64)));
-      document.getElementById("payloadPart").innerHTML = syntaxHighlight(JSON.parse(base64UrlDecode(payloadB64)));
-
-      if (signature === expectedSig) {
-        resultBox.innerHTML = "✅ 검증 성공\n" + syntaxHighlight(JSON.parse(base64UrlDecode(payloadB64)));
-      } else {
-        resultBox.textContent = "❌ 검증 실패 - 서명이 일치하지 않습니다.";
-      }
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>
