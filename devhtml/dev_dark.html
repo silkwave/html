@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dev Dark Responsive Card Layout</title>
     <style>
-        /* 모든 요소에 box-sizing 설정하여 패딩과 보더를 너비 계산에 포함 */
-        * {
-            box-sizing: border-box;
-        }
-        /* 페이지 기본 스타일 설정 */
+        /* 모든 요소에 box-sizing 설정 */
+        * { box-sizing: border-box; }
+        /* 페이지 기본 스타일 */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
@@ -17,16 +15,16 @@
             color: #fff;
             min-height: 100vh;
         }
-        /* 카드들을 포함하는 컨테이너 스타일 */
+        /* 카드 컨테이너 */
         .site-wrapper {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
             padding: 20px;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
         }
-        /* 개별 카드 스타일, 기본적으로 숨김 */
+        /* 개별 카드, 기본 숨김 */
         .site-card {
             background: #2a2a2a;
             border-radius: 8px;
@@ -34,14 +32,14 @@
             width: 300px;
             display: none;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s;
         }
-        /* 활성화된 카드 표시 */
+        /* 활성화된 카드 */
         .site-card.active {
             display: block;
             opacity: 1;
         }
-        /* 카드 내 텍스트 입력 필드 스타일 */
+        /* 텍스트 입력 필드 */
         .card-input {
             width: 100%;
             min-height: 100px;
@@ -51,21 +49,18 @@
             border-radius: 4px;
             padding: 8px;
             resize: vertical;
-            font-family: inherit;
             margin-top: 10px;
         }
-        /* 링크 리스트 스타일 */
+        /* 링크 리스트 */
         .link-list {
             list-style: none;
             padding: 0;
             margin: 10px 0 0;
             width: 100%;
         }
-        .link-list li {
-            margin: 4px 0;
-        }
-        /* 링크 버튼 스타일 */
-        .link-button {
+        .link-list li { margin: 4px 0; }
+        /* 링크 버튼 및 컨트롤 버튼 공통 스타일 */
+        .link-button, #cardControls button {
             display: block;
             width: 100%;
             background: #444;
@@ -75,11 +70,20 @@
             border-radius: 4px;
             text-align: center;
             transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
         }
-        .link-button:hover {
+        /* 호버 효과 */
+        .link-button:hover, #cardControls button:hover:not(:disabled) {
             background: #666;
         }
-        /* 카드 컨트롤 버튼들 (Prev/Next/모두 보기) 스타일 */
+        /* 비활성화 버튼 */
+        #cardControls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        /* 카드 컨트롤 */
         #cardControls {
             position: fixed;
             left: 20px;
@@ -88,25 +92,7 @@
             gap: 8px;
             z-index: 40;
         }
-        #cardControls button {
-            background: #444;
-            color: #fff;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.2s;
-        }
-        #cardControls button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        #cardControls button:hover:not(:disabled) {
-            background: #666;
-        }
-
-        /* 반응형 디자인: 768px 이하 */
+        /* 반응형: 768px 이하 */
         @media (max-width: 768px) {
             .site-card {
                 width: 100%;
@@ -123,21 +109,15 @@
                 align-items: flex-start;
             }
         }
-        /* 반응형 디자인: 480px 이하 */
+        /* 반응형: 480px 이하 */
         @media (max-width: 480px) {
-            .site-card {
-                padding: 15px;
-            }
+            .site-card { padding: 15px; }
             .card-input {
                 min-height: 80px;
                 font-size: 14px;
             }
-            .link-button {
+            .link-button, #cardControls button {
                 padding: 5px 10px;
-                font-size: 14px;
-            }
-            #cardControls button {
-                padding: 6px 10px;
                 font-size: 14px;
             }
         }
@@ -228,7 +208,7 @@
                     toggleAll.textContent = '단일 보기';
                     toggleAll.setAttribute('aria-pressed', 'true');
                 } else {
-                    wrapper.style.display = 'block'; // 단일 카드만 표시
+                    wrapper.style.display = 'flex'; // 단일 카드만 표시
                     cards.forEach(card => card.classList.remove('active'));
                     cards[index].classList.add('active');
                     prevBtn.disabled = index === 0;
