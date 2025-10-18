@@ -1,136 +1,191 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Dark Responsive Card Layout</title>
-    <style>
-        /* 모든 요소에 box-sizing 설정 */
-        * { box-sizing: border-box; }
-        /* 페이지 기본 스타일 */
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
-            min-height: 100vh;
-        }
-        /* 카드 컨테이너 */
-        .site-wrapper {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            padding: 20px;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-        /* 개별 카드, 기본 숨김 */
-        .site-card {
-            background: #2a2a2a;
-            border-radius: 8px;
-            padding: 20px;
-            width: 300px;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        /* 활성화된 카드 */
-        .site-card.active {
-            display: block;
-            opacity: 1;
-        }
-        /* 텍스트 입력 필드 */
-        .card-input {
-            width: 100%;
-            min-height: 100px;
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 4px;
-            padding: 8px;
-            resize: vertical;
-            margin-top: 10px;
-        }
-        /* 링크 리스트 */
-        .link-list {
-            list-style: none;
-            padding: 0;
-            margin: 10px 0 0;
-            width: 100%;
-        }
-        .link-list li { margin: 4px 0; }
-        /* 링크 버튼 및 컨트롤 버튼 공통 스타일 */
-        .link-button, #cardControls button {
-            display: block;
-            width: 100%;
-            background: #444;
-            color: #fff;
-            text-decoration: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            text-align: center;
-            transition: background 0.2s;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        /* 호버 효과 */
-        .link-button:hover, #cardControls button:hover:not(:disabled) {
-            background: #666;
-        }
-        /* 비활성화 버튼 */
-        #cardControls button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        /* 카드 컨트롤 */
-        #cardControls {
-            position: fixed;
-            left: 20px;
-            bottom: 20px;
-            display: flex;
-            gap: 8px;
-            z-index: 40;
-        }
-        /* 반응형: 768px 이하 */
-        @media (max-width: 768px) {
-            .site-card {
-                width: 100%;
-                max-width: 400px;
-            }
-            .site-wrapper {
-                padding: 10px;
-                gap: 10px;
-            }
-            #cardControls {
-                left: 10px;
-                bottom: 10px;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-        /* 반응형: 480px 이하 */
-        @media (max-width: 480px) {
-            .site-card { padding: 15px; }
-            .card-input {
-                min-height: 80px;
-                font-size: 14px;
-            }
-            .link-button, #cardControls button {
-                padding: 5px 10px;
-                font-size: 14px;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dev Dark — Refactored</title>
+  <style>
+    /* =======================
+       CSS 변수 정의
+       ======================= */
+    :root {
+      --bg-light: #f0f0f0;
+      --card-light: #e8e8e8;
+      --bg-dark: #121212;
+      --card-dark: #1e1e1e;
+      --accent: #f0e300;
+      --muted: #6b7280;
+    }
+
+    /* =======================
+       기본 스타일
+       ======================= */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: Inter, system-ui, Segoe UI, Roboto, Helvetica, Arial; }
+    body { background: var(--bg-light); color: #111; }
+
+    /* =======================
+       사이트 카드 래퍼
+       ======================= */
+    .site-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 20px;
+      max-width: 1600px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    /* =======================
+       카드 스타일
+       ======================= */
+    .site-card {
+      flex: 1 1 300px;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: left;
+      background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.6));
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 8px 24px rgba(2,6,23,0.06);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: transform 0.2s ease;
+    }
+
+    .site-card h3 { font-size: 20px; margin: 8px 0; }
+    .site-card p { font-size: 14px; color: var(--muted); margin: 6px 0; }
+
+    /* =======================
+       카드 메모 영역
+       ======================= */
+    .card-input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      height: 80px;
+      resize: none;
+      border: 1px solid #d1d5db;
+    }
+    .card-input:focus { outline: 2px solid rgba(0,0,0,0.08); }
+
+    /* =======================
+       링크 버튼 리스트
+       ======================= */
+    .link-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin: 8px 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .link-button {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      text-align: left;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      color: #111;
+      border: 1px solid rgba(255,255,255,0.35);
+      box-shadow: 0 6px 18px rgba(2,6,23,0.08);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+    }
+    .link-button:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 10px 28px rgba(2,6,23,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0.12));
+      color: #000;
+    }
+    .link-button:focus {
+      outline: 3px solid rgba(0,123,255,0.25);
+      outline-offset: 2px;
+    }
+
+    /* =======================
+       테마 토글 버튼
+       ======================= */
+    .theme-toggle-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      z-index: 50;
+    }
+
+    body.dark-mode .theme-toggle-button { background: #444; color: #fff; }
+    body.light-mode .theme-toggle-button { background: var(--accent); color: #111; }
+
+    /* =======================
+       카드 캐러셀 버튼
+       ======================= */
+    #cardControls {
+      position: fixed;
+      left: 20px;
+      bottom: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 40;
+    }
+    #cardControls button {
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* =======================
+       다크 모드 카드 & 버튼 스타일
+       ======================= */
+    body.dark-mode {
+      background: var(--bg-dark);
+      color: #e0e0e0;
+    }
+    body.dark-mode .site-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    body.dark-mode .link-button {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      color: #eaeaea;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* =======================
+       모바일 대응
+       ======================= */
+    @media (max-width: 768px) {
+      .site-wrapper { flex-direction: column; gap: 30px; padding: 0 12px; }
+    }
+  </style>
 </head>
 <body>
-    <!-- 카드들을 포함하는 컨테이너 -->
-    <div class="site-wrapper">
-        <!-- 첫 번째 카드 (기본적으로 표시) -->
-        <section class="site-card active">
+    <!-- 테마 토글 버튼 -->
+    <button class="theme-toggle-button" id="themeToggle">🌙 다크 모드</button>
+
+    <!-- 카드 캐러셀 버튼 -->
+    <div id="cardControls">
+        <button id="prevCard">◀ 이전</button>
+        <button id="nextCard">다음 ▶</button>
+        <button id="toggleAll" aria-pressed="false">모두 보기</button>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="site-wrapper">
+        <!-- Dev Sites -->
+        <section class="site-card">
             <h3>개발 Sites</h3>
             <p>개발 및 프로그래밍에 유용한 링크들입니다.</p>
-            <!-- 링크 리스트 -->
+            <textarea class="card-input" placeholder="메모 또는 링크 추가..." aria-label="개발 Sites memo"></textarea>
             <ul class="link-list">
                 <li><a class="link-button" href="https://www.google.co.kr/" target="_blank" rel="noopener">구글</a></li>
                 <li><a class="link-button" href="https://www.youtube.com/" target="_blank" rel="noopener">유튜브</a></li>
@@ -138,126 +193,111 @@
                 <li><a class="link-button" href="https://www.github.com/" target="_blank" rel="noopener">GitHub</a></li>
                 <li><a class="link-button" href="https://www.stackoverflow.com/" target="_blank" rel="noopener">Stack Overflow</a></li>
             </ul>
-            <!-- 메모 입력 필드 -->
-            <textarea class="card-input" placeholder="메모 또는 링크 추가..." aria-label="Card 1 memo"></textarea>
         </section>
-        <!-- 두 번째 카드 -->
+
+        <!-- 품질 Sites -->
         <section class="site-card">
             <h3>품질 Sites</h3>
             <p>추가적인 개발 리소스와 도구 링크들입니다.</p>
+            <textarea class="card-input" placeholder="메모 또는 링크 추가..." aria-label="품질 Sites memo"></textarea>
             <ul class="link-list">
-                <li><a class="link-button" href="https://www.google.co.kr/" target="_blank" rel="noopener">구글</a></li>
-                <li><a class="link-button" href="https://www.youtube.com/" target="_blank" rel="noopener">유튜브</a></li>
-                <li><a class="link-button" href="https://mvnrepository.com/" target="_blank" rel="noopener">Maven</a></li>
-                <li><a class="link-button" href="https://www.github.com/" target="_blank" rel="noopener">GitHub</a></li>
-                <li><a class="link-button" href="https://www.stackoverflow.com/" target="_blank" rel="noopener">Stack Overflow</a></li>
+                <li><a class="link-button" href="https://www.sonarqube.org/" target="_blank" rel="noopener">SonarQube</a></li>
+                <li><a class="link-button" href="https://www.jenkins.io/" target="_blank" rel="noopener">Jenkins</a></li>
+                <li><a class="link-button" href="https://snyk.io/" target="_blank" rel="noopener">Snyk</a></li>
+                <li><a class="link-button" href="https://www.selenium.dev/" target="_blank" rel="noopener">Selenium</a></li>
             </ul>
-            <textarea class="card-input" placeholder="메모 또는 링크 추가..." aria-label="Card 2 memo"></textarea>
         </section>
-        <!-- 세 번째 카드 -->
+
+        <!-- 운영 Sites -->
         <section class="site-card">
             <h3>운영 Sites</h3>
             <p>프로그래밍 학습 및 참조 사이트 모음입니다.</p>
+            <textarea class="card-input" placeholder="메모 또는 링크 추가..." aria-label="운영 Sites memo"></textarea>
             <ul class="link-list">
-                <li><a class="link-button" href="https://www.google.co.kr/" target="_blank" rel="noopener">구글</a></li>
-                <li><a class="link-button" href="https://www.youtube.com/" target="_blank" rel="noopener">유튜브</a></li>
-                <li><a class="link-button" href="https://mvnrepository.com/" target="_blank" rel="noopener">Maven</a></li>
-                <li><a class="link-button" href="https://www.github.com/" target="_blank" rel="noopener">GitHub</a></li>
-                <li><a class="link-button" href="https://www.stackoverflow.com/" target="_blank" rel="noopener">Stack Overflow</a></li>
+                <li><a class="link-button" href="https://grafana.com/" target="_blank" rel="noopener">Grafana</a></li>
+                <li><a class="link-button" href="https://prometheus.io/" target="_blank" rel="noopener">Prometheus</a></li>
+                <li><a class="link-button" href="https://aws.amazon.com/console/" target="_blank" rel="noopener">AWS Console</a></li>
+                <li><a class="link-button" href="https://cloud.google.com/console/" target="_blank" rel="noopener">GCP Console</a></li>
+                <li><a class="link-button" href="https://www.datadoghq.com/" target="_blank" rel="noopener">Datadog</a></li>
             </ul>
-            <textarea class="card-input" placeholder="메모 또는 링크 추가..." aria-label="Card 3 memo"></textarea>
         </section>
-    </div>
-    <!-- 카드 컨트롤 버튼들 (이전/다음/모두 보기) -->
-    <div id="cardControls">
-        <button id="prevCard" aria-label="이전 카드">◀</button>
-        <button id="nextCard" aria-label="다음 카드">▶</button>
-        <button id="toggleAll" aria-pressed="false">모두 보기</button>
-    </div>
+    </main>
+
     <script>
-        (function () {
-            // 카드와 컨트롤 요소 선택
-            const cards = Array.from(document.querySelectorAll('.site-card'));
-            const wrapper = document.querySelector('.site-wrapper');
-            const prevBtn = document.querySelector('#prevCard');
-            const nextBtn = document.querySelector('#nextCard');
-            const toggleAll = document.querySelector('#toggleAll');
-            let index = 0; // 현재 표시 중인 카드 인덱스
-            let showAll = localStorage.getItem('showAll') === 'true'; // 모두 보기 상태
+        // =======================
+        // 카드 캐러셀 기능
+        // =======================
+        (function() {
+          const cards = Array.from(document.querySelectorAll('.site-card'));
+          let index = 0;
+          const prevBtn = document.getElementById('prevCard');
+          const nextBtn = document.getElementById('nextCard');
+          const toggleAll = document.getElementById('toggleAll');
+          let showAll = false;
 
-            // 입력 내용을 디바운스로 localStorage에 저장
-            function bindDebouncedSave(el, key, delay = 300) {
-                el.value = localStorage.getItem(key) || "";
-                let tid;
-                el.addEventListener("input", () => {
-                    clearTimeout(tid);
-                    tid = setTimeout(() => localStorage.setItem(key, el.value), delay);
-                });
+          function updateView() {
+            if (showAll) {
+              document.querySelector('.site-wrapper').style.display = 'flex';
+              cards.forEach(c => c.style.display = 'block');
+              prevBtn.disabled = true;
+              nextBtn.disabled = true;
+              toggleAll.setAttribute('aria-pressed','true');
+              toggleAll.textContent = '단일 보기';
+              return;
             }
+            document.querySelector('.site-wrapper').style.display = 'block';
+            cards.forEach((c,i) => { c.style.display = i === index ? 'block' : 'none'; });
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === cards.length-1;
+            toggleAll.setAttribute('aria-pressed','false');
+            toggleAll.textContent = '모두 보기';
+          }
 
-            // 각 카드 입력 필드에 디바운스 저장 바인딩
-            document.querySelectorAll(".card-input").forEach((el, i) => bindDebouncedSave(el, `card-input-${i}`));
+          prevBtn.addEventListener('click', () => { if (index > 0) { index--; updateView(); } });
+          nextBtn.addEventListener('click', () => { if (index < cards.length - 1) { index++; updateView(); } });
+          toggleAll.addEventListener('click', () => { showAll = !showAll; updateView(); });
+          document.addEventListener('keydown', (e) => {
+              if (showAll || document.activeElement.tagName === 'TEXTAREA') return;
+              if (e.key === 'ArrowLeft') { prevBtn.click(); }
+              if (e.key === 'ArrowRight') { nextBtn.click(); }
+          });
 
-            // 뷰 업데이트 함수: 단일/모두 보기 전환
-            function updateView() {
-                if (showAll) {
-                    wrapper.style.display = 'flex'; // 모든 카드 표시
-                    cards.forEach(card => card.classList.add('active'));
-                    prevBtn.disabled = true;
-                    nextBtn.disabled = true;
-                    toggleAll.textContent = '단일 보기';
-                    toggleAll.setAttribute('aria-pressed', 'true');
-                } else {
-                    wrapper.style.display = 'flex'; // 단일 카드만 표시
-                    cards.forEach(card => card.classList.remove('active'));
-                    cards[index].classList.add('active');
-                    prevBtn.disabled = index === 0;
-                    nextBtn.disabled = index === cards.length - 1;
-                    toggleAll.textContent = '모두 보기';
-                    toggleAll.setAttribute('aria-pressed', 'false');
-                }
-                localStorage.setItem('showAll', showAll); // 뷰 상태 저장
-            }
-
-            // 이전 버튼 클릭 이벤트
-            prevBtn.addEventListener('click', () => {
-                if (index > 0) {
-                    index--;
-                    updateView();
-                }
-            });
-
-            // 다음 버튼 클릭 이벤트
-            nextBtn.addEventListener('click', () => {
-                if (index < cards.length - 1) {
-                    index++;
-                    updateView();
-                }
-            });
-
-            // 모두 보기/단일 보기 토글 버튼 클릭 이벤트
-            toggleAll.addEventListener('click', () => {
-                showAll = !showAll;
-                index = 0; // 뷰 전환 시 첫 카드로 리셋
-                updateView();
-            });
-
-            // 키보드 내비게이션 (좌/우 화살표)
-            document.addEventListener('keydown', (e) => {
-                if (!showAll && document.activeElement.tagName !== 'TEXTAREA') {
-                    if (e.key === 'ArrowLeft' && index > 0) {
-                        index--;
-                        updateView();
-                    } else if (e.key === 'ArrowRight' && index < cards.length - 1) {
-                        index++;
-                        updateView();
-                    }
-                }
-            });
-
-            // 초기 뷰 설정
-            updateView();
+          updateView();
         })();
+
+        // =======================
+        // 테마 토글 기능
+        // =======================
+        const themeToggle = document.getElementById("themeToggle");
+        const savedTheme = localStorage.getItem("theme");
+        function applyTheme(t) {
+          document.body.classList.toggle("dark-mode", t === "dark");
+          document.body.classList.toggle("light-mode", t === "light");
+          themeToggle.textContent = t === "dark" ? "🌞 라이트 모드" : "🌙 다크 모드";
+        }
+        applyTheme(savedTheme || "dark");
+        themeToggle.addEventListener("click", () => {
+          const next = document.body.classList.contains("dark-mode") ? "light" : "dark";
+          applyTheme(next);
+          localStorage.setItem("theme", next);
+        });
+
+        // =======================
+        // 카드 메모 로컬스토리지 저장 (디바운스)
+        // =======================
+        function bindDebouncedSave(el, key, delay=300) {
+          el.value = localStorage.getItem(key) || "";
+          let tid;
+          el.addEventListener("input", () => {
+            clearTimeout(tid);
+            tid = setTimeout(() => localStorage.setItem(key, el.value), delay);
+          });
+        }
+        document.querySelectorAll(".card-input").forEach((el,i) => {
+            const cardTitle = el.closest('.site-card').querySelector('h3').textContent;
+            bindDebouncedSave(el, `card-memo-${cardTitle}`);
+            el.setAttribute('aria-label', `${cardTitle} memo`);
+        });
     </script>
 </body>
 </html>
