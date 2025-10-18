@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dev Dark — Refactored</title>
+  <style>
+    /* =======================
+       CSS 변수 정의
+       ======================= */
+    :root {
+      --bg-light: #f0f0f0;
+      --card-light: #e8e8e8;
+      --bg-dark: #121212;
+      --card-dark: #1e1e1e;
+      --accent: #f0e300;
+      --muted: #6b7280;
+    }
+
+    /* =======================
+       기본 스타일
+       ======================= */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: Inter, system-ui, Segoe UI, Roboto, Helvetica, Arial; }
+    body { background: var(--bg-light); color: #111; }
+
+    /* =======================
+       사이트 카드 래퍼
+       ======================= */
+    .site-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 20px;
+      max-width: 1600px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    /* =======================
+       카드 스타일
+       ======================= */
+    .site-card {
+      flex: 1 1 300px;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: left;
+      background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.6));
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 8px 24px rgba(2,6,23,0.06);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: transform 0.2s ease;
+    }
+
+    .site-card h3 { font-size: 20px; margin: 8px 0; }
+    .site-card p { font-size: 14px; color: var(--muted); margin: 6px 0; }
+
+    /* =======================
+       카드 메모 영역
+       ======================= */
+    .card-input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      height: 80px;
+      resize: none;
+      border: 1px solid #d1d5db;
+    }
+    .card-input:focus { outline: 2px solid rgba(0,0,0,0.08); }
+
+    /* =======================
+       링크 버튼 리스트
+       ======================= */
+    .link-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin: 8px 0;
+    }
+
+    .link-button {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      text-align: left;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      color: #111;
+      border: 1px solid rgba(255,255,255,0.35);
+      box-shadow: 0 6px 18px rgba(2,6,23,0.08);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+    }
+    .link-button:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 10px 28px rgba(2,6,23,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0.12));
+      color: #000;
+    }
+    .link-button:focus {
+      outline: 3px solid rgba(0,123,255,0.25);
+      outline-offset: 2px;
+    }
+
+    /* =======================
+       테마 토글 버튼
+       ======================= */
+    .theme-toggle-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      z-index: 50;
+    }
+
+    body.dark-mode .theme-toggle-button { background: #444; color: #fff; }
+    body.light-mode .theme-toggle-button { background: var(--accent); color: #111; }
+
+    /* =======================
+       카드 캐러셀 버튼
+       ======================= */
+    #cardControls {
+      position: fixed;
+      left: 20px;
+      bottom: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 40;
+    }
+    #cardControls button {
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* =======================
+       다크 모드 카드 & 버튼 스타일
+       ======================= */
+    body.dark-mode {
+      background: var(--bg-dark);
+      color: #e0e0e0;
+    }
+    body.dark-mode .site-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    body.dark-mode .link-button {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      color: #eaeaea;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* =======================
+       모바일 대응
+       ======================= */
+    @media (max-width: 768px) {
+      .site-wrapper { flex-direction: column; gap: 30px; padding: 0 12px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 테마 토글 버튼 -->
+  <button class="theme-toggle-button" id="themeToggle">🌙 다크 모드</button>
+
+  <!-- 카드 캐러셀 버튼 -->
+  <div id="cardControls">
+    <button id="prevCard">◀ 이전</button>
+    <button id="nextCard">다음 ▶</button>
+    <button id="toggleAll" aria-pressed="false">모두 보기</button>
+  </div>
+
+  <!-- 메인 콘텐츠 -->
+  <main class="site-wrapper">
+    <!-- Local Sites -->
+    <section class="site-card">
+      <h3>Local Sites</h3>
+      <p>자주 사용하는 로컬 리소스 및 사이트들입니다.</p>
+      <textarea class="card-input" placeholder="메모 또는 링크 추가..."></textarea>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://www.daum.net/" target="_blank" rel="noopener">다음</a></li>
+        <li><a class="link-button" href="https://www.naver.com/" target="_blank" rel="noopener">네이버</a></li>
+        <li><a class="link-button" href="https://www.bing.com/" target="_blank" rel="noopener">빙</a></li>
+        <li><a class="link-button" href="https://www.kakao.com/" target="_blank" rel="noopener">카카오</a></li>
+      </ul>
+    </section>
+
+    <!-- Dev Sites -->
+    <section class="site-card">
+      <h3>Dev Sites</h3>
+      <p>개발 및 프로그래밍에 유용한 링크들입니다.</p>
+      <textarea class="card-input" placeholder="메모 또는 링크 추가..."></textarea>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://www.google.co.kr/" target="_blank" rel="noopener">구글</a></li>
+        <li><a class="link-button" href="https://www.youtube.com/" target="_blank" rel="noopener">유튜브</a></li>
+        <li><a class="link-button" href="https://mvnrepository.com/" target="_blank" rel="noopener">Maven</a></li>
+        <li><a class="link-button" href="https://www.github.com/" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a class="link-button" href="https://www.stackoverflow.com/" target="_blank" rel="noopener">Stack Overflow</a></li>
+      </ul>
+    </section>
+
+    <!-- TEST Sites -->
+    <section class="site-card">
+      <h3>TEST Sites</h3>
+      <p>테스트 및 개발 목적의 사이트들입니다.</p>
+      <textarea class="card-input" placeholder="메모 또는 링크 추가..."></textarea>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://www.example.com/" target="_blank" rel="noopener">Example</a></li>
+        <li><a class="link-button" href="https://www.test.com/" target="_blank" rel="noopener">Test</a></li>
+        <li><a class="link-button" href="https://www.placeholder.com/" target="_blank" rel="noopener">Placeholder</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    // =======================
+    // 카드 캐러셀 기능
+    // =======================
+    (function() {
+      const cards = Array.from(document.querySelectorAll('.site-card'));
+      let index = 0;
+      const prevBtn = document.getElementById('prevCard');
+      const nextBtn = document.getElementById('nextCard');
+      const toggleAll = document.getElementById('toggleAll');
+      let showAll = false;
+
+      function updateView() {
+        if (showAll) {
+          document.querySelector('.site-wrapper').style.display = 'flex';
+          cards.forEach(c => c.style.display = 'block');
+          prevBtn.disabled = true;
+          nextBtn.disabled = true;
+          toggleAll.setAttribute('aria-pressed','true');
+          return;
+        }
+        document.querySelector('.site-wrapper').style.display = 'block';
+        cards.forEach((c,i) => { c.style.display = i === index ? 'block' : 'none'; });
+        prevBtn.disabled = index === 0;
+        nextBtn.disabled = index === cards.length-1;
+        toggleAll.setAttribute('aria-pressed','false');
+      }
+
+      prevBtn.addEventListener('click', () => { index = Math.max(0, index-1); updateView(); });
+      nextBtn.addEventListener('click', () => { index = Math.min(cards.length-1, index+1); updateView(); });
+      toggleAll.addEventListener('click', () => { showAll = !showAll; updateView(); });
+
+      updateView();
+    })();
+
+    // =======================
+    // 테마 토글 기능
+    // =======================
+    const themeToggle = document.getElementById("themeToggle");
+    const savedTheme = localStorage.getItem("theme");
+    function applyTheme(t) {
+      document.body.classList.toggle("dark-mode", t === "dark");
+      document.body.classList.toggle("light-mode", t === "light");
+      themeToggle.textContent = t === "dark" ? "🌙 다크 모드" : "🌞 라이트 모드";
+    }
+    applyTheme(savedTheme || "dark");
+    themeToggle.addEventListener("click", () => {
+      const next = document.body.classList.contains("dark-mode") ? "light" : "dark";
+      applyTheme(next);
+      localStorage.setItem("theme", next);
+    });
+
+    // =======================
+    // 카드 메모 로컬스토리지 저장 (디바운스)
+    // =======================
+    function bindDebouncedSave(el, key, delay=300) {
+      el.value = localStorage.getItem(key) || "";
+      let tid;
+      el.addEventListener("input", () => {
+        clearTimeout(tid);
+        tid = setTimeout(() => localStorage.setItem(key, el.value), delay);
+      });
+    }
+    document.querySelectorAll(".card-input").forEach((el,i) => bindDebouncedSave(el, `card-input-${i}`));
+  </script>
+</body>
+</html>
