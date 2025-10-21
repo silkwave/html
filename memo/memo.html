@@ -212,29 +212,65 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // =================================================================================
+            // 상수 정의 (Constants)
+            // =================================================================================
+            const CONSTANTS = {
+                STORAGE_KEY: 'vanilla-memos',
+                DEBOUNCE_DELAY: 500, // 자동 저장 지연 시간 (ms)
+            };
+
+            // =================================================================================
+            // DOM 요소 및 상태 변수 (DOM Elements & State)
+            // =================================================================================
             const memoList = document.getElementById('memo-list');
             const addMemoBtn = document.getElementById('add-memo-btn');
             const mainContent = document.getElementById('main-content');
             const saveBtn = document.getElementById('save-btn');
-            const importFile = document.getElementById('import-file');
 
-            const STORAGE_KEY = 'vanilla-memos';
-            let memos = [];
-            let currentMemoId = null;
+            let memos = []; // 모든 메모 데이터를 저장하는 배열
+            let currentMemoId = null; // 현재 선택된 메모의 ID
             let fileHandle = null; // File System Access API를 위한 파일 핸들
 
-            // 데이터 로드 (localStorage)
+            // =================================================================================
+            // 유틸리티 함수 (Utility Functions)
+            // =================================================================================
+
+            /** JSON 문자열을 UTF-8을 지원하는 Base64로 인코딩합니다. */
+            const encodeToBase64 = (jsonString) => btoa(unescape(encodeURIComponent(jsonString)));
+
+            /** Base64 문자열을 디코딩하여 원본 JSON 문자열로 복원합니다. */
+            const decodeFromBase64 = (base64String) => decodeURIComponent(escape(atob(base64String)));
+
+            /** 지정된 태그, 클래스, 텍스트, 속성을 가진 DOM 요소를 생성합니다. */
+            const createElement = (tag, className, textContent, attributes = {}) => {
+                const element = document.createElement(tag);
+                if (className) element.className = className;
+                if (textContent) element.textContent = textContent;
+                Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+                return element;
+            };
+
+            // =================================================================================
+            // 데이터 관리 함수 (Data Management)
+            // =================================================================================
+
+            /** 브라우저 로컬 스토리지에서 메모 데이터를 불러옵니다. */
             function loadMemos() {
-                const memosJSON = localStorage.getItem(STORAGE_KEY);
+                const memosJSON = localStorage.getItem(CONSTANTS.STORAGE_KEY);
                 memos = memosJSON ? JSON.parse(memosJSON) : [];
             }
 
-            // 데이터 저장 (localStorage)
+            /** 현재 메모 데이터를 브라우저 로컬 스토리지에 저장합니다. */
             function saveMemos() {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+                localStorage.setItem(CONSTANTS.STORAGE_KEY, JSON.stringify(memos));
             }
 
-            // 왼쪽 메모 목록 렌더링
+            // =================================================================================
+            // UI 렌더링 함수 (UI Rendering)
+            // =================================================================================
+
+            /** 'memos' 배열을 기반으로 왼쪽 메모 목록 UI를 다시 그립니다. */
             function renderMemoList() {
                 memoList.innerHTML = '';
                 if (memos.length === 0) {
@@ -242,40 +278,38 @@
                     return;
                 }
                 memos.forEach(memo => {
-                    const li = document.createElement('li');
-                    li.textContent = memo.title;
-                    li.dataset.id = memo.id;
+                    const li = createElement('li', null, memo.title, { 'data-id': memo.id });
                     if (memo.id === currentMemoId) {
-                        li.classList.add('selected');
+                        li.classList.add('selected'); // 현재 선택된 메모는 'selected' 클래스 추가
                     }
                     li.addEventListener('click', () => selectMemo(memo.id));
                     memoList.appendChild(li);
                 });
             }
 
-            // 오른쪽 에디터 뷰 렌더링
+            /** 선택된 메모를 기반으로 오른쪽 에디터 UI를 다시 그립니다. */
             function renderEditor() {
                 const memo = memos.find(m => m.id === currentMemoId);
+
+                // 1. 선택된 메모가 없으면 안내 메시지 표시
                 if (!memo) {
                     mainContent.innerHTML = '<div class="placeholder">왼쪽에서 메모를 선택하거나 새 메모를 추가하세요.</div>';
                     return;
                 }
 
-                mainContent.innerHTML = `
-                    <div class="editor-container">
-                        <div class="editor-header">
-                            <button id="delete-memo-btn">삭제</button>
-                        </div>
-                        <input type="text" id="memo-title" value="${memo.title}">
-                        <textarea id="memo-content" placeholder="내용을 입력하세요...">${memo.content}</textarea>
-                    </div>
-                `;
+                // 2. 선택된 메모가 있으면 에디터 UI 동적 생성
+                mainContent.innerHTML = ''; // 기존 내용 초기화
+                const editorContainer = createElement('div', 'editor-container');
+                const editorHeader = createElement('div', 'editor-header');
+                const deleteBtn = createElement('button', null, '삭제', { id: 'delete-memo-btn' });
+                const titleInput = createElement('input', null, null, { type: 'text', id: 'memo-title', value: memo.title });
+                const contentTextarea = createElement('textarea', null, memo.content, { id: 'memo-content', placeholder: '내용을 입력하세요...' });
 
-                const titleInput = document.getElementById('memo-title');
-                const contentTextarea = document.getElementById('memo-content');
-                const deleteBtn = document.getElementById('delete-memo-btn');
+                editorHeader.appendChild(deleteBtn);
+                editorContainer.append(editorHeader, titleInput, contentTextarea);
+                mainContent.appendChild(editorContainer);
 
-                // 자동 저장 (Debounce 적용으로 성능 최적화)
+                // 자동 저장 (Debounce 적용): 입력이 멈춘 후 일정 시간 뒤에 저장합니다.
                 let debounceTimer;
                 const autoSave = () => {
                     clearTimeout(debounceTimer);
@@ -287,7 +321,7 @@
                             saveMemos();
                             renderMemoList(); // 제목이 바뀔 수 있으므로 목록도 다시 렌더링
                         }
-                    }, 500); // 500ms 지연
+                    }, CONSTANTS.DEBOUNCE_DELAY);
                 };
 
                 titleInput.addEventListener('input', autoSave);
@@ -295,14 +329,18 @@
                 deleteBtn.addEventListener('click', deleteMemo);
             }
 
-            // 메모 선택
+            // =================================================================================
+            // 핵심 로직 및 이벤트 핸들러 (Core Logic & Event Handlers)
+            // =================================================================================
+
+            /** 목록에서 메모를 클릭했을 때 호출됩니다. */
             function selectMemo(id) {
                 currentMemoId = id;
                 renderMemoList();
                 renderEditor();
             }
 
-            // 새 메모 추가
+            /** '새 메모 추가' 버튼 클릭 시 실행됩니다. */
             addMemoBtn.addEventListener('click', () => {
                 const newMemo = {
                     id: Date.now().toString(),
@@ -318,7 +356,7 @@
                 document.getElementById('memo-title').select();
             });
 
-            // 메모 삭제
+            /** '삭제' 버튼 클릭 시 실행됩니다. */
             function deleteMemo() {
                 if (!currentMemoId) return;
                 if (confirm('정말로 이 메모를 삭제하시겠습니까?')) {
@@ -330,22 +368,24 @@
                 }
             }
 
-            // 파일에 저장 (열려있는 파일에 덮어쓰기)
+            /** '파일에 저장' 버튼 클릭 시 실행됩니다. */
             async function saveFile() {
                 if (memos.length === 0) {
                     alert('저장할 메모가 없습니다.');
                     return;
                 }
 
+                // 1. 메모 데이터를 JSON 문자열로 변환 후 Base64로 인코딩합니다.
                 const memosJSON = JSON.stringify(memos);
-                const base64Data = btoa(unescape(encodeURIComponent(memosJSON)));
+                const base64Data = encodeToBase64(memosJSON);
 
-                // 파일 핸들이 있으면 덮어쓰기, 없으면 다운로드
+                // 2. 파일 핸들이 있으면(열려있는 파일이 있으면) 해당 파일에 덮어쓰기를 시도합니다.
                 if (fileHandle) {
                     if (!confirm(`'${fileHandle.name}' 파일에 변경 내용을 덮어쓰시겠습니까?`)) {
                         return; // 사용자가 취소하면 저장 작업을 중단합니다.
                     }
                     try {
+                        // 쓰기 가능한 스트림을 생성하고 데이터를 쓴 후 닫습니다.
                         const writable = await fileHandle.createWritable({ keepExistingData: false });
                         await writable.write(base64Data);
                         await writable.close();
@@ -357,7 +397,7 @@
                         }
                     }
                 } else {
-                    // 파일이 열려있지 않은 경우, "다른 이름으로 저장" 실행
+                    // 3. 파일 핸들이 없으면(열려있는 파일이 없으면) "다른 이름으로 저장" 대화상자를 엽니다.
                     try {
                         const handle = await window.showSaveFilePicker({
                             suggestedName: 'memos.json',
@@ -367,7 +407,7 @@
                                 accept: { 'application/json': ['.json'] },
                             }],
                         });
-                        fileHandle = handle; // 새 파일 핸들 저장
+                        fileHandle = handle; // 새로 저장한 파일의 핸들을 저장하여 다음 덮어쓰기에 사용합니다.
                         const writable = await fileHandle.createWritable({ keepExistingData: false });
                         await writable.write(base64Data);
                         await writable.close();
@@ -381,13 +421,15 @@
                 }
             }
 
-            // 파일 열기
+            /** '파일 열기' 버튼 클릭 시 실행됩니다. */
             async function openFile(event) {
+                // 파일 내용을 읽어 메모 데이터로 변환하는 내부 함수
                 const processFileContent = (content) => {
                      try {
-                        const memosJSON = decodeURIComponent(escape(atob(content)));
+                        // Base64 데이터를 디코딩하여 JSON으로 파싱합니다.
+                        const memosJSON = decodeFromBase64(content);
                         const importedMemos = JSON.parse(memosJSON);
-                        memos = importedMemos;
+                        memos = importedMemos; // 불러온 데이터로 현재 메모를 교체
                         currentMemoId = memos.length > 0 ? memos[0].id : null;
                         saveMemos(); // localStorage에도 업데이트
                         renderMemoList();
@@ -403,6 +445,7 @@
                     return;
                 }
 
+                // File System Access API를 사용해 파일 열기 대화상자를 엽니다.
                 try {
                     const [handle] = await window.showOpenFilePicker({
                         startIn: 'documents', // 파일 탐색기를 '문서' 폴더에서 시작하도록 제안
@@ -411,7 +454,7 @@
                             accept: { 'application/json': ['.json'] },
                         }],
                     });
-                    fileHandle = handle; // 파일 핸들 저장
+                    fileHandle = handle; // 열린 파일의 핸들을 저장하여 '파일에 저장' 시 사용합니다.
                     const file = await fileHandle.getFile();
                     const content = await file.text();
                     processFileContent(content);
@@ -423,10 +466,15 @@
                 }
             }
 
-            // 초기화
+            // =================================================================================
+            // 애플리케이션 초기화 (Initialization)
+            // =================================================================================
+
+            /** 페이지 로드 시 실행되는 메인 함수입니다. */
             function init() {
-                // File System Access API 지원 여부 확인
+                // 1. File System Access API 지원 여부를 확인합니다.
                 if (!('showOpenFilePicker' in window)) {
+                    // 지원하지 않으면 파일 입출력 버튼 대신 안내 메시지를 표시
                     const fileIOButtons = document.querySelector('.file-io-buttons');
                     if(fileIOButtons) {
                         fileIOButtons.innerHTML = '<p style="font-size: 12px; color: #666;">현재 브라우저는 파일 입출력 기능을 지원하지 않습니다.</p>';
@@ -434,6 +482,7 @@
                 }
                 loadMemos();
                 if (memos.length > 0) {
+                    // 첫 번째 메모를 기본으로 선택
                     currentMemoId = memos[0].id;
                 }
                 renderMemoList();
@@ -442,17 +491,19 @@
 
             // "파일 열기" 라벨에 대한 참조
             const openFileLabel = document.querySelector('label[for="import-file"]');
-
-            // 라벨 클릭 시 openFile 함수 호출
             if (openFileLabel) {
                 openFileLabel.addEventListener('click', (e) => {
-                    e.preventDefault(); // 기본 동작(input 클릭) 방지.
+                    // 라벨의 기본 동작(연결된 숨은 input 클릭)을 막고,
+                    // File System Access API를 직접 호출합니다.
+                    e.preventDefault();
                     openFile();
                 });
             }
 
+            // "파일에 저장" 버튼 클릭 이벤트 리스너 등록
             saveBtn.addEventListener('click', saveFile);
 
+            // 애플리케이션 초기화 함수를 호출합니다.
             init();
         });
     </script>
