@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단 메모장</title>
+    <style>
+        :root {
+            --border-color: #ddd;
+            --background-color: #f9f9f9;
+            --selected-color: #e6f7ff;
+            --hover-color: #f0f0f0;
+            --button-color: #007bff;
+            --button-hover-color: #0056b3;
+            --danger-color: #dc3545;
+            --danger-hover-color: #c82333;
+            --text-color: #333;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            background-color: #f4f4f4;
+            color: var(--text-color);
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-width: 200px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .file-io-buttons {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #save-btn, .import-btn-label {
+            flex: 1; /* 버튼들이 공간을 균등하게 차지하도록 */
+            padding: 8px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+
+        #save-btn:hover, .import-btn-label:hover {
+            background-color: #5a6268;
+        }
+
+        #add-memo-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--button-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        #add-memo-btn:hover {
+            background-color: var(--button-hover-color);
+        }
+
+        #memo-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        #memo-list li {
+            padding: 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background-color 0.2s;
+        }
+
+        #memo-list li:hover {
+            background-color: var(--hover-color);
+        }
+
+        #memo-list li.selected {
+            background-color: var(--selected-color);
+            font-weight: bold;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--background-color);
+        }
+
+        .editor-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        #delete-memo-btn {
+            padding: 8px 15px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        #delete-memo-btn:hover {
+            background-color: var(--danger-hover-color);
+        }
+
+        #memo-title {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #memo-title:focus {
+            outline: none;
+            border: 1px solid var(--button-color);
+        }
+
+        #memo-content {
+            flex-grow: 1;
+            font-size: 16px;
+            line-height: 1.6;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            resize: none; /* 사용자가 크기 조절 못하게 */
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #memo-content:focus {
+            outline: none;
+            border-color: var(--button-color);
+        }
+
+        .placeholder {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #888;
+            font-size: 18px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <button id="add-memo-btn">새 메모 추가</button>
+                <div class="file-io-buttons">
+                    <label for="import-file" class="import-btn-label" style="flex: 1.5;">파일 열기</label>
+                    <button id="save-btn">파일에 저장</button>
+                    <input type="file" id="import-file" accept=".json" style="display: none;">
+                </div>
+            </div>
+            <ul id="memo-list"></ul>
+        </aside>
+        <main class="main-content" id="main-content">
+            <!-- 메모가 선택되면 여기에 에디터가 표시됩니다. -->
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const memoList = document.getElementById('memo-list');
+            const addMemoBtn = document.getElementById('add-memo-btn');
+            const mainContent = document.getElementById('main-content');
+            const saveBtn = document.getElementById('save-btn');
+            const importFile = document.getElementById('import-file');
+
+            const STORAGE_KEY = 'vanilla-memos';
+            let memos = [];
+            let currentMemoId = null;
+            let fileHandle = null; // File System Access API를 위한 파일 핸들
+
+            // 데이터 로드 (localStorage)
+            function loadMemos() {
+                const memosJSON = localStorage.getItem(STORAGE_KEY);
+                memos = memosJSON ? JSON.parse(memosJSON) : [];
+            }
+
+            // 데이터 저장 (localStorage)
+            function saveMemos() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+            }
+
+            // 왼쪽 메모 목록 렌더링
+            function renderMemoList() {
+                memoList.innerHTML = '';
+                if (memos.length === 0) {
+                    memoList.innerHTML = '<li style="cursor: default; color: #888; text-align: center; padding-top: 20px;">메모가 없습니다.</li>';
+                    return;
+                }
+                memos.forEach(memo => {
+                    const li = document.createElement('li');
+                    li.textContent = memo.title;
+                    li.dataset.id = memo.id;
+                    if (memo.id === currentMemoId) {
+                        li.classList.add('selected');
+                    }
+                    li.addEventListener('click', () => selectMemo(memo.id));
+                    memoList.appendChild(li);
+                });
+            }
+
+            // 오른쪽 에디터 뷰 렌더링
+            function renderEditor() {
+                const memo = memos.find(m => m.id === currentMemoId);
+                if (!memo) {
+                    mainContent.innerHTML = '<div class="placeholder">왼쪽에서 메모를 선택하거나 새 메모를 추가하세요.</div>';
+                    return;
+                }
+
+                mainContent.innerHTML = `
+                    <div class="editor-container">
+                        <div class="editor-header">
+                            <button id="delete-memo-btn">삭제</button>
+                        </div>
+                        <input type="text" id="memo-title" value="${memo.title}">
+                        <textarea id="memo-content" placeholder="내용을 입력하세요...">${memo.content}</textarea>
+                    </div>
+                `;
+
+                const titleInput = document.getElementById('memo-title');
+                const contentTextarea = document.getElementById('memo-content');
+                const deleteBtn = document.getElementById('delete-memo-btn');
+
+                // 자동 저장 (Debounce 적용으로 성능 최적화)
+                let debounceTimer;
+                const autoSave = () => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        const currentMemo = memos.find(m => m.id === currentMemoId);
+                        if (currentMemo) {
+                            currentMemo.title = titleInput.value;
+                            currentMemo.content = contentTextarea.value;
+                            saveMemos();
+                            renderMemoList(); // 제목이 바뀔 수 있으므로 목록도 다시 렌더링
+                        }
+                    }, 500); // 500ms 지연
+                };
+
+                titleInput.addEventListener('input', autoSave);
+                contentTextarea.addEventListener('input', autoSave);
+                deleteBtn.addEventListener('click', deleteMemo);
+            }
+
+            // 메모 선택
+            function selectMemo(id) {
+                currentMemoId = id;
+                renderMemoList();
+                renderEditor();
+            }
+
+            // 새 메모 추가
+            addMemoBtn.addEventListener('click', () => {
+                const newMemo = {
+                    id: Date.now().toString(),
+                    title: '새 메모',
+                    content: ''
+                };
+                memos.unshift(newMemo); // 새 메모를 맨 위에 추가
+                saveMemos();
+                currentMemoId = newMemo.id;
+                renderMemoList();
+                renderEditor();
+                document.getElementById('memo-title').focus();
+                document.getElementById('memo-title').select();
+            });
+
+            // 메모 삭제
+            function deleteMemo() {
+                if (!currentMemoId) return;
+                if (confirm('정말로 이 메모를 삭제하시겠습니까?')) {
+                    memos = memos.filter(memo => memo.id !== currentMemoId);
+                    saveMemos();
+                    currentMemoId = null;
+                    renderMemoList();
+                    renderEditor();
+                }
+            }
+
+            // 파일에 저장 (열려있는 파일에 덮어쓰기)
+            async function saveFile() {
+                if (memos.length === 0) {
+                    alert('저장할 메모가 없습니다.');
+                    return;
+                }
+
+                const memosJSON = JSON.stringify(memos);
+                const base64Data = btoa(unescape(encodeURIComponent(memosJSON)));
+
+                // 파일 핸들이 있으면 덮어쓰기, 없으면 다운로드
+                if (fileHandle) {
+                    if (!confirm(`'${fileHandle.name}' 파일에 변경 내용을 덮어쓰시겠습니까?`)) {
+                        return; // 사용자가 취소하면 저장 작업을 중단합니다.
+                    }
+                    try {
+                        const writable = await fileHandle.createWritable({ keepExistingData: false });
+                        await writable.write(base64Data);
+                        await writable.close();
+                        alert('파일에 성공적으로 저장되었습니다.');
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            console.error('파일 덮어쓰기 오류:', err);
+                            alert('파일을 저장하는 데 실패했습니다. 브라우저 권한을 확인해주세요.');
+                        }
+                    }
+                } else {
+                    // 파일이 열려있지 않은 경우, "다른 이름으로 저장" 실행
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: 'memos.json',
+                            startIn: 'documents',
+                            types: [{
+                                description: 'JSON Files',
+                                accept: { 'application/json': ['.json'] },
+                            }],
+                        });
+                        fileHandle = handle; // 새 파일 핸들 저장
+                        const writable = await fileHandle.createWritable({ keepExistingData: false });
+                        await writable.write(base64Data);
+                        await writable.close();
+                        alert('파일이 성공적으로 저장되었습니다.');
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            console.error('파일 저장 오류:', err);
+                            alert('파일을 저장하는 데 실패했습니다.');
+                        }
+                    }
+                }
+            }
+
+            // 파일 열기
+            async function openFile(event) {
+                const processFileContent = (content) => {
+                     try {
+                        const memosJSON = decodeURIComponent(escape(atob(content)));
+                        const importedMemos = JSON.parse(memosJSON);
+                        memos = importedMemos;
+                        currentMemoId = memos.length > 0 ? memos[0].id : null;
+                        saveMemos(); // localStorage에도 업데이트
+                        renderMemoList();
+                        renderEditor();
+                        alert('메모를 성공적으로 불러왔습니다.');
+                    } catch (error) {
+                        alert('잘못된 파일 형식입니다. Base64로 인코딩된 JSON 파일을 선택해주세요.');
+                        console.error("파일 파싱 오류:", error);
+                    }
+                };
+
+                if (!confirm('파일을 열면 현재 메모가 모두 교체됩니다. 계속하시겠습니까?')) {
+                    return;
+                }
+
+                try {
+                    const [handle] = await window.showOpenFilePicker({
+                        startIn: 'documents', // 파일 탐색기를 '문서' 폴더에서 시작하도록 제안
+                        types: [{
+                            description: 'JSON Files',
+                            accept: { 'application/json': ['.json'] },
+                        }],
+                    });
+                    fileHandle = handle; // 파일 핸들 저장
+                    const file = await fileHandle.getFile();
+                    const content = await file.text();
+                    processFileContent(content);
+                } catch (err) {
+                     if (err.name !== 'AbortError') {
+                        console.error('파일 열기 오류:', err);
+                        alert('파일을 여는 데 실패했습니다.');
+                    }
+                }
+            }
+
+            // 초기화
+            function init() {
+                // File System Access API 지원 여부 확인
+                if (!('showOpenFilePicker' in window)) {
+                    const fileIOButtons = document.querySelector('.file-io-buttons');
+                    if(fileIOButtons) {
+                        fileIOButtons.innerHTML = '<p style="font-size: 12px; color: #666;">현재 브라우저는 파일 입출력 기능을 지원하지 않습니다.</p>';
+                    }
+                }
+                loadMemos();
+                if (memos.length > 0) {
+                    currentMemoId = memos[0].id;
+                }
+                renderMemoList();
+                renderEditor();
+            }
+
+            // "파일 열기" 라벨에 대한 참조
+            const openFileLabel = document.querySelector('label[for="import-file"]');
+
+            // 라벨 클릭 시 openFile 함수 호출
+            if (openFileLabel) {
+                openFileLabel.addEventListener('click', (e) => {
+                    e.preventDefault(); // 기본 동작(input 클릭) 방지.
+                    openFile();
+                });
+            }
+
+            saveBtn.addEventListener('click', saveFile);
+
+            init();
+        });
+    </script>
+
+</body>
+</html>
