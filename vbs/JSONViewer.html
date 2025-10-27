@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JSON 뷰어 — 좌우 배치 (PC 고정)</title>
+
+    <style>
+        /* 🎨 테마 변수 */
+        :root {
+            --bg: #0f1720;
+            --card: #0b1220;
+            --muted: #9aa6b2;
+            --accent: #4cc9f0;
+            --key-color: #93c5fd;
+            --string-color: #fbbf24;
+            --number-color: #34d399;
+            --boolean-color: #f87171;
+            --null-color: #a78bfa;
+        }
+        .theme-green { --accent: #34d399; }
+        .theme-red { --accent: #f87171; }
+
+
+        /* 🧱 기본 설정 */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 2rem;
+            background: var(--bg);
+            color: #e5e7eb;
+            font-family: "JetBrains Mono", Consolas, monospace;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+        }
+
+        main {
+            width: 100%;
+            max-width: 1600px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        header {
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--accent);
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        /* 🔘 버튼 */
+        .action-bar {
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        button {
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: var(--bg);
+            font-weight: bold;
+            font-size: 0.95rem;
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        #copyBtn { background: var(--number-color); }
+        #copyBtn:hover { background: #6ee7b7; }
+        #clearBtn { background: var(--boolean-color); }
+        #clearBtn:hover { background: #fca5a5; }
+
+        button:hover {
+            background: #73dff5;
+        }
+
+        /* 📄 좌우 레이아웃 */
+        .viewer-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: stretch;
+        }
+
+        textarea,
+        pre {
+            flex: 1;
+            background: var(--card);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1rem;
+            color: #fff;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            overflow: auto;
+            min-height: 600px;
+        }
+
+        textarea {
+            resize: none;
+            flex: 0.45;
+            /* 좌측 45% */
+        }
+
+        pre {
+            flex: 0.55;
+            /* 우측 55% */
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* 🌈 구문 강조 */
+        .key {
+            color: var(--key-color);
+        }
+
+        .string {
+            color: var(--string-color);
+        }
+
+        .number {
+            color: var(--number-color);
+        }
+
+        .boolean {
+            color: var(--boolean-color);
+        }
+
+        .null {
+            color: var(--null-color);
+        }
+    </style>
+</head>
+
+<body>
+    <main aria-label="JSON Viewer">
+        <header>
+            <h1>🧩 JSON 뷰어</h1>
+        </header>
+
+        <div class="action-bar">
+            <button onclick="renderJson()" title="입력된 JSON을 포맷하여 보여줍니다.">보기</button>
+            <button onclick="copyOutput()" id="copyBtn" title="결과창의 내용을 복사합니다.">복사</button>
+            <button onclick="clearAll()" id="clearBtn" title="입력과 결과를 모두 지웁니다.">초기화</button>
+        </div>
+
+        <section class="viewer-container">
+            <textarea id="jsonInput" placeholder="여기에 JSON 입력..." aria-label="JSON 입력">
+{\"name\" : \"apple\", \"id\" : 1, \"price\" : 1000}                
+            </textarea>
+            <pre id="jsonOutput" aria-label="JSON 출력"></pre>
+        </section>
+    </main>
+
+    <script>
+        /* ✅ JSON 파싱 및 렌더링 (JS는 변경하지 않음) */
+        /**
+         * 입력된 JSON 텍스트를 파싱하고 예쁘게 포맷하여 출력합니다.
+         * Java 문자열 형식의 JSON (예: {\"key\":\"value\"})을 자동으로 감지하고 변환합니다.
+         */
+        function renderJson() {
+            let input = document.getElementById('jsonInput').value;
+            if (!input.trim()) return; // 입력이 없으면 실행하지 않음
+            const output = document.getElementById('jsonOutput');
+
+            try {
+                // Java 문자열 형식의 JSON일 경우, 이스케이프된 따옴표(\")를 일반 따옴표(")로 변환합니다.
+                // JSON.parse는 문자열 내의 유효한 이스케이프 시퀀스(예: \\)는 올바르게 처리합니다.
+                const processedInput = input.replace(/\\"/g, '"');
+                const obj = JSON.parse(processedInput);
+                const formattedJson = JSON.stringify(obj, null, 2);
+                output.innerHTML = syntaxHighlight(formattedJson);
+                // 상태 메시지는 다른 함수에서 처리하므로 여기서는 생략
+            } catch (err) {
+                output.innerHTML = `<span style="color:var(--boolean-color)">❌ JSON 파싱 오류:</span> ${err.message}`;
+            }
+        }
+
+        /**
+         * 결과창의 텍스트를 클립보드에 복사합니다.
+         */
+        function copyOutput() {
+            const output = document.getElementById('jsonOutput');
+            const textToCopy = output.innerText;
+
+            if (!textToCopy || textToCopy.startsWith('❌')) {
+                alert("복사할 유효한 내용이 없습니다.");
+                return;
+            }
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert("📋 결과가 클립보드에 복사되었습니다.");
+            }).catch(err => {
+                alert("복사에 실패했습니다. 브라우저 설정을 확인해주세요.");
+                console.error('Copy failed', err);
+            });
+        }
+
+        /**
+         * 입력창과 결과창의 내용을 모두 지웁니다.
+         */
+        function clearAll() {
+            if (confirm("입력과 결과를 모두 지우시겠습니까?")) {
+                document.getElementById('jsonInput').value = '';
+                document.getElementById('jsonOutput').innerHTML = '';
+            }
+        }
+
+        function syntaxHighlight(json) {
+            let highlighted = json
+                .replace(/&/g, "&amp;")
+                .replace(/>/g, "&gt;")
+                .replace(/</g, "&lt;");
+
+            // 정규식을 여러 줄로 나누어 가독성을 높입니다.
+            // RegExp 생성자를 사용하므로 백슬래시(\)는 이스케이프 처리(\\)해야 합니다.
+            // 또한, 기존 정규식에 포함된 불필요한 공백을 제거하여 JSON 문자열 파싱 오류를 방지합니다.
+            const regex = new RegExp([
+                // 1. 문자열 (키 또는 값): "key" 또는 "value"
+                '("',                  // 시작 따옴표
+                '(?:',                 // 비캡처 그룹 시작 (문자열 내용)
+                '\\\\u[a-zA-Z0-9]{4}', // 유니코드 이스케이프 시퀀스 (예: \u0022)
+                '|',
+                '\\\\[^u]',            // 다른 이스케이프 시퀀스 (예: \n, \t, \", \\ 등, 단 \u 제외)
+                '|',
+                '[^\\\\"]',            // 백슬래시나 따옴표가 아닌 모든 문자
+                ')*?',                 // 0회 이상 반복 (non-greedy)
+                '"',                   // 끝 따옴표
+                '(\\s*:)?',            // 키 뒤에 오는 콜론 (선택적 공백 포함)
+                ')',                   // 문자열 전체 그룹 끝
+                '|',
+                // 2. 불리언 및 null 값
+                '\\b(true|false|null)\\b',
+                '|',
+                // 3. 숫자 (정수, 실수, 지수 표기법) - 각 부분을 조합
+                '-?',                     // 부호 (선택)
+                '\\d+',                   // 정수 부분
+                '(?:\\.\\d*)?',           // 소수점 이하 부분 (선택)
+                '(?:[eE][+\\-]?\\d+)?'    // 지수 부분 (선택)
+            ].join(''), 'g');
+
+            return highlighted.replace(regex, match => {
+                let cls = 'number';
+                if (/^"/.test(match)) cls = /:$/.test(match) ? 'key' : 'string';
+                else if (/true|false/.test(match)) cls = 'boolean';
+                else if (/null/.test(match)) cls = 'null';
+                return `<span class="${cls}">${match}</span>`;
+            });
+        }
+    </script>
+</body>
+
+</html>
