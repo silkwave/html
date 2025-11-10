@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FFT 알고리즘 데모</title>
+    <style>
+        :root {
+            --bg: #0f1720;
+            --panel: #0b1220;
+            --muted: #9aa6b2;
+            --accent: #60a5fa;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Inter, "Noto Sans KR", system-ui;
+            background: var(--bg);
+            color: #e6eef8;
+        }
+
+        .wrap {
+            max-width: 1100px;
+            margin: 24px auto;
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+        }
+
+        header {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        input[type="range"] {
+            vertical-align: middle;
+        }
+
+        button {
+            background: var(--accent);
+            color: #042;
+            border: 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .canvas-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        canvas {
+            background: var(--glass);
+            border-radius: 8px;
+            width: 100%;
+            height: 240px;
+            display: block;
+        }
+
+        .col {
+            flex: 1 1 48%;
+        }
+
+        .small {
+            flex: 1 1 100%;
+        }
+
+        footer {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .stat {
+            font-size: 13px;
+            color: #cfe9ff;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <header>
+            <h1>FFT 알고리즘 데모 — HTML5/CSS/JS (한글주석 버전)</h1>
+            <div class="stat" id="nSamples">샘플 수: 1024</div>
+        </header>
+
+        <!-- 컨트롤 패널 -->
+        <div class="controls">
+            <div>
+                <label>샘플 수 (N, 2^k): <span id="nLabel">1024</span></label><br />
+                <input id="nRange" type="range" min="8" max="14" value="10" /> <!-- 2^8 ~ 2^14 -->
+            </div>
+            <div>
+                <label>사인파1 주파수 (Hz): <span id="f1Label">50</span></label><br />
+                <input id="f1" type="range" min="1" max="200" value="50" />
+            </div>
+            <div>
+                <label>사인파2 주파수 (Hz): <span id="f2Label">120</span></label><br />
+                <input id="f2" type="range" min="1" max="400" value="120" />
+            </div>
+            <div>
+                <label>노이즈 진폭: <span id="noiseLabel">0.3</span></label><br />
+                <input id="noise" type="range" min="0" max="1" step="0.01" value="0.3" />
+            </div>
+            <div style="align-self:flex-end;">
+                <button id="regen">신호 재생성 · FFT</button>
+            </div>
+        </div>
+
+        <!-- 캔버스 영역 -->
+        <div class="canvas-row">
+            <div class="col">
+                <label>시간 영역 (원시 신호)</label>
+                <canvas id="timeCanvas"></canvas>
+            </div>
+            <div class="col">
+                <label>주파수 영역 (크기 스펙트럼)</label>
+                <canvas id="freqCanvas"></canvas>
+            </div>
+            <div class="small">
+                <label>복원 신호 (IFFT 결과 — 시간 영역)</label>
+                <canvas id="reconCanvas"></canvas>
+            </div>
+        </div>
+
+        <footer>
+            구현: Cooley–Tukey iterative FFT (bit-reversal). 역변환 시 1/N 스케일 적용. 샘플링률 1024 Hz 가정. (트위들 부호 수정)
+        </footer>
+    </div>
+
+    <script>
+        /* ----------------------------
+           복소수 클래스
+           ---------------------------- */
+        class Complex {
+            constructor(re = 0, im = 0) { this.re = re; this.im = im; }   // 실수부, 허수부
+            add(b) { return new Complex(this.re + b.re, this.im + b.im); }   // 덧셈
+            sub(b) { return new Complex(this.re - b.re, this.im - b.im); }   // 뺄셈
+            mul(b) { return new Complex(this.re * b.re - this.im * b.im, this.re * b.im + this.im * b.re); } // 곱셈
+            scale(s) { return new Complex(this.re * s, this.im * s); } // 스케일
+            abs() { return Math.hypot(this.re, this.im); } // 크기
+        }
+
+        /* ----------------------------
+           비트 반전 인덱스 생성
+           FFT 순서를 위한 재배치
+           ---------------------------- */
+        function bitReverseIndices(n) {
+            const rev = new Uint32Array(n);
+            const bits = Math.floor(Math.log2(n));
+            for (let i = 0; i < n; i++) {
+                let x = i, r = 0;
+                for (let j = 0; j < bits; j++) {
+                    r = (r << 1) | (x & 1);
+                    x >>= 1;
+                }
+                rev[i] = r;
+            }
+            return rev;
+        }
+
+        /* ----------------------------
+           Cooley-Tukey iterative FFT
+           input: Complex 배열, 길이 n(2의 거듭제곱)
+           inverse: true -> IFFT
+           output: 변환된 Complex 배열
+           ---------------------------- */
+        function fft(input, inverse = false) {
+            const n = input.length;
+            if ((n & (n - 1)) !== 0) throw new Error("length must be power of two");
+            const out = new Array(n);
+            const rev = bitReverseIndices(n);
+
+            // 비트 반전 복사
+            for (let i = 0; i < n; i++) out[i] = input[rev[i]];
+
+            for (let size = 2; size <= n; size <<= 1) {
+                const half = size >>> 1;
+                const ang = (inverse ? 2 : -2) * Math.PI / size; // 각도
+                const wPhaseStep = new Complex(Math.cos(ang), Math.sin(ang));
+                for (let i = 0; i < n; i += size) {
+                    let w = new Complex(1, 0); // 초기 w=1
+                    for (let j = 0; j < half; j++) {
+                        const u = out[i + j];
+                        const v = out[i + j + half].mul(w);
+                        out[i + j] = u.add(v);
+                        out[i + j + half] = u.sub(v);
+                        w = w.mul(wPhaseStep);
+                    }
+                }
+            }
+
+            // 역변환 시 스케일링
+            if (inverse) {
+                for (let i = 0; i < n; i++) out[i] = out[i].scale(1 / n);
+            }
+            return out;
+        }
+
+        /* ----------------------------
+           사인파 + 노이즈 신호 생성
+           N: 샘플 수, fs: 샘플링률, f1/f2: 주파수, noiseAmp: 노이즈 진폭
+           ---------------------------- */
+        function generateSignal(N, fs, f1, f2, noiseAmp) {
+            const sig = new Array(N);
+            for (let i = 0; i < N; i++) {
+                const t = i / fs;
+                const v = Math.sin(2 * Math.PI * f1 * t) * 1.0
+                    + 0.6 * Math.sin(2 * Math.PI * f2 * t)
+                    + noiseAmp * (Math.random() * 2 - 1); // -1~1 랜덤 노이즈
+                sig[i] = new Complex(v, 0);
+            }
+            return sig;
+        }
+
+        /* ----------------------------
+           캔버스 DPI 대응
+           ---------------------------- */
+        function fitDPR(canvas) {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return ctx;
+        }
+
+        /* ----------------------------
+           시간 영역 신호 그리기
+           ---------------------------- */
+        function drawTimeDomain(canvas, data, color = '#9be') {
+            const ctx = fitDPR(canvas);
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            // 최소/최대 계산
+            let min = Infinity, max = -Infinity;
+            for (let val of data) {
+                min = Math.min(min, val.re);
+                max = Math.max(max, val.re);
+            }
+            const range = max - min || 2;
+            const scaleY = (h / 2) / (range / 2) * 0.9;
+            const offsetY = h / 2;
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            const N = data.length;
+            for (let i = 0; i < N; i++) {
+                const x = (i / (N - 1)) * w;
+                const y = offsetY - (data[i].re - min) * scaleY + (min * scaleY);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 중앙 축
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.beginPath(); ctx.moveTo(0, offsetY); ctx.lineTo(w, offsetY); ctx.stroke();
+        }
+
+        /* ----------------------------
+           주파수 영역 신호 그리기
+           ---------------------------- */
+        function drawFreqDomain(canvas, freqComplex, fs) {
+            const ctx = fitDPR(canvas);
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const N = freqComplex.length;
+            const half = N / 2;
+            const mags = new Float32Array(half);
+            let max = 1e-9;
+
+            for (let i = 0; i < half; i++) {
+                const v = freqComplex[i].abs();
+                mags[i] = v;
+                if (v > max) max = v;
+            }
+
+            ctx.fillStyle = 'rgba(120,180,255,0.06)';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.strokeStyle = '#9be';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            for (let i = 0; i < half; i++) {
+                const x = (i / (half - 1)) * w;
+                const y = h - (mags[i] / max) * (h * 0.95);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 라벨
+            ctx.fillStyle = '#9aa6b2';
+            ctx.font = '12px sans-serif';
+            ctx.fillText(`fs = ${fs} Hz, bins = ${half} (0 ~ ${fs / 2} Hz)`, 8, 14);
+            ctx.fillText('0 Hz', 4, h - 4);
+            ctx.fillText(`${fs / 2} Hz`, w - 30, h - 4);
+        }
+
+        /* ----------------------------
+           UI 연결 및 초기화
+           ---------------------------- */
+        const fs = 1024; // 샘플링률
+        const timeCanvas = document.getElementById('timeCanvas');
+        const freqCanvas = document.getElementById('freqCanvas');
+        const reconCanvas = document.getElementById('reconCanvas');
+        const nRange = document.getElementById('nRange');
+        const nLabel = document.getElementById('nLabel');
+        const nSamples = document.getElementById('nSamples');
+        const f1Range = document.getElementById('f1');
+        const f2Range = document.getElementById('f2');
+        const noiseRange = document.getElementById('noise');
+        const regen = document.getElementById('regen');
+        const f1Label = document.getElementById('f1Label');
+        const f2Label = document.getElementById('f2Label');
+        const noiseLabel = document.getElementById('noiseLabel');
+
+        // 슬라이더 값 업데이트
+        function updateLabels() {
+            const N = 1 << parseInt(nRange.value);
+            nLabel.textContent = N;
+            nSamples.textContent = `샘플 수: ${N}`;
+            f1Label.textContent = f1Range.value;
+            f2Label.textContent = f2Range.value;
+            noiseLabel.textContent = Number(noiseRange.value).toFixed(2);
+        }
+
+        [nRange, f1Range, f2Range, noiseRange].forEach(e => e.addEventListener('input', updateLabels));
+
+        // 신호 생성 + FFT/IFFT + 캔버스 그리기
+        function runOnce() {
+            updateLabels();
+            const N = 1 << parseInt(nRange.value);
+            const f1 = Number(f1Range.value);
+            const f2 = Number(f2Range.value);
+            const noiseAmp = Number(noiseRange.value);
+
+            const sig = generateSignal(N, fs, f1, f2, noiseAmp); // 원시 신호
+            const spec = fft(sig, false); // FFT
+            const recon = fft(spec, true); // IFFT 복원
+
+            drawTimeDomain(timeCanvas, sig); // 시간 영역
+            drawFreqDomain(freqCanvas, spec, fs); // 주파수 영역
+            drawTimeDomain(reconCanvas, recon, '#c6f6d5'); // 복원 신호
+
+            // MSE 출력
+            let mse = 0;
+            for (let i = 0; i < N; i++) {
+                const diff = sig[i].re - recon[i].re;
+                mse += diff * diff;
+            }
+            mse /= N;
+            console.log(`IFFT 복원 MSE: ${mse.toExponential(2)} (수치 오차 기준)`);
+        }
+
+        regen.addEventListener('click', runOnce);
+
+        // 초기 실행 및 리사이즈 대응
+        window.addEventListener('load', () => {
+            [timeCanvas, freqCanvas, reconCanvas].forEach(c => {
+                c.style.width = '100%';
+                c.style.height = '240px';
+            });
+            runOnce();
+            window.addEventListener('resize', runOnce);
+        });
+    </script>
+</body>
+
+</html>

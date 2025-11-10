@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Base64 MS949 디코딩</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 20px;
+        padding: 20px;
+        background-color: #f4f7f6;
+        color: #333;
+        line-height: 1.6;
+        max-width: 800px;
+        margin: 20px auto;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        background-color: #fff;
+      }
+      h1,
+      h3 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 25px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #34495e;
+      }
+      textarea,
+      input[type="file"] {
+        width: calc(100% - 22px);
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 1rem;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #3498db;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: background-color 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+      }
+      button:hover {
+        background-color: #2980b9;
+      }
+      div#message {
+        margin-top: 15px;
+        padding: 10px;
+        border-radius: 5px;
+        font-weight: bold;
+        text-align: center;
+        min-height: 20px; /* Ensure space even when empty */
+      }
+      div#message[style*="color: red"] {
+        background-color: #fdeded;
+        color: #e74c3c;
+        border: 1px solid #e74c3c;
+      }
+      div#message[style*="color: green"] {
+        background-color: #e8f8f5;
+        color: #2ecc71;
+        border: 1px solid #2ecc71;
+      }
+      pre#preview {
+        border: 1px solid #ddd;
+        padding: 15px;
+        white-space: pre-wrap;
+        min-height: 180px;
+        background-color: #ecf0f1;
+        border-radius: 5px;
+        font-family: "Consolas", "Monaco", monospace;
+        font-size: 0.95rem;
+        color: #2c3e50;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Base64 MS949 디코딩</h1>
+
+    <!-- git config --list --show-origin -->
+
+    <label>Base64 문자열 입력 (MS949 인코딩 기반):</label><br />
+    <textarea id="base64Input" rows="6" cols="60">vsiz58fPvLy/5A==</textarea
+    ><br />
+
+    <label>파일 업로드 (.c 파일 → Base64 변환):</label><br />
+    <input type="file" id="fileInput" accept=".c" /><br /><br />
+
+    <button id="decodeBtn">디코딩하기</button>
+
+    <div id="message"></div>
+
+    <h3>🔎 Base64 디코딩 미리보기</h3>
+    <pre id="preview">디코딩 결과가 여기에 표시됩니다...</pre>
+
+    <script>
+      // ID로 DOM 요소를 가져오는 헬퍼 함수
+      const getEl = (id) => document.getElementById(id);
+
+      // 주요 DOM 요소들을 변수에 할당
+      const base64Input = getEl("base64Input"), // Base64 입력 텍스트 영역
+        messageEl = getEl("message"), // 메시지 표시 영역
+        previewEl = getEl("preview"), // 디코딩 결과 미리보기 영역
+        fileInput = getEl("fileInput"), // 파일 업로드 입력
+        decodeBtn = getEl("decodeBtn"); // 디코딩 실행 버튼
+
+      /**
+       * 사용자에게 메시지를 표시하는 함수
+       * @param {string} text - 표시할 메시지 내용
+       * @param {boolean} isError - 오류 메시지 여부 (true이면 빨간색, false이면 녹색)
+       */
+      const showMessage = (text, isError = false) => {
+        messageEl.textContent = text;
+        messageEl.style.color = isError ? "red" : "green";
+      };
+
+      /**
+       * Base64 문자열을 Uint8Array (바이트 배열)로 변환하는 함수
+       * @param {string} base64 - 변환할 Base64 문자열
+       * @returns {Uint8Array|null} 변환된 바이트 배열 또는 실패 시 null
+       */
+      const base64ToUint8Array = (base64) => {
+        try {
+          // atob 함수로 Base64 문자열을 바이너리 문자열로 디코딩
+          const binaryString = atob(base64);
+          // 바이너리 문자열의 각 문자를 char 코드로 변환하여 Uint8Array 생성
+          return Uint8Array.from(binaryString, (char) => char.charCodeAt(0));
+        } catch (e) {
+          console.error("Base64 decoding error:", e);
+          return null; // 디코딩 실패 시 null 반환
+        }
+      };
+
+      /**
+       * 바이트 배열(Uint8Array)을 UTF-8과 MS949 인코딩으로 각각 해석하여 문자열로 반환
+       * @param {Uint8Array} bytes - 디코딩할 바이트 배열
+       * @returns {{utf8: string, ms949: string}} 각 인코딩으로 해석된 문자열 객체
+       */
+      const decodeBytes = (bytes) => {
+        try {
+          const utf8Decoder = new TextDecoder("utf-8");
+          const ms949Decoder = new TextDecoder("windows-949"); // MS949(CP949) 디코더
+          return {
+            utf8: utf8Decoder.decode(bytes),
+            ms949: ms949Decoder.decode(bytes),
+          };
+        } catch (e) {
+          console.error("Byte decoding error:", e);
+          return { utf8: "[디코딩 실패]", ms949: "[디코딩 실패]" };
+        }
+      };
+
+      // '디코딩하기' 버튼 클릭 이벤트 핸들러
+      decodeBtn.onclick = () => {
+        showMessage(""); // 이전 메시지 초기화
+        previewEl.textContent = ""; // 이전 미리보기 초기화
+
+        const base64 = base64Input.value.trim(); // 입력된 Base64 문자열의 양쪽 공백 제거
+        if (!base64) return showMessage("Base64 문자열을 입력해주세요.", true);
+
+        // Base64 문자열을 바이트 배열로 변환
+        const bytes = base64ToUint8Array(base64);
+        if (!bytes)
+          return showMessage(
+            "Base64 디코딩 실패. 유효한 문자열인지 확인해주세요.",
+            true
+          );
+
+        // 바이트 배열을 각 인코딩으로 디코딩
+        const decodedResult = decodeBytes(bytes);
+        // 결과를 미리보기 영역에 표시
+        previewEl.textContent = `[UTF-8 해석]\n${decodedResult.utf8}\n\n[MS949 해석]\n${decodedResult.ms949}`;
+        showMessage("디코딩이 완료되었습니다.");
+      };
+
+      // 파일 입력(input) 변경 이벤트 핸들러
+      fileInput.onchange = (event) => {
+        const file = event.target.files[0]; // 선택된 파일 가져오기
+        if (!file) return;
+
+        const reader = new FileReader(); // 파일 읽기 위한 FileReader 객체 생성
+        // 파일 읽기가 완료되면 실행될 콜백 함수
+        reader.onload = (e) => {
+          // 파일 내용을 ArrayBuffer로 읽어와 Uint8Array로 변환
+          const fileBytes = new Uint8Array(e.target.result);
+          // 바이트 배열을 Base64 문자열로 인코딩하여 입력란에 설정
+          base64Input.value = btoa(String.fromCharCode(...fileBytes));
+          showMessage("파일이 Base64로 변환되어 입력란에 삽입되었습니다.");
+        };
+        // 파일을 ArrayBuffer 형태로 읽기 시작
+        reader.readAsArrayBuffer(file);
+      };
+    </script>
+  </body>
+</html>

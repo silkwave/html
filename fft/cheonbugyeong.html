@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>천부경 시각화 — HTML5 + JS</title>
+    <style>
+        :root {
+            --bg: #071023;
+            --card: #0b1630;
+            --muted: #9fb0c8;
+            --accent: #ffd166;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Inter, "Noto Sans KR", system-ui, sans-serif;
+            color: #e6f0fa;
+            background: linear-gradient(180deg, var(--bg), #04121a);
+        }
+
+        .app {
+            display: flex;
+            gap: 16px;
+            height: 100%;
+            padding: 18px;
+            box-sizing: border-box
+        }
+
+        .canvas-wrap {
+            flex: 1;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 360px;
+            background: linear-gradient(180deg, var(--card), #051226);
+            border-radius: 12px;
+            padding: 16px;
+            box-sizing: border-box;
+            color: var(--muted);
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.5);
+        }
+
+        h1 {
+            margin: 4px 0 12px 0;
+            font-size: 18px;
+            color: var(--accent);
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 10px
+        }
+
+        input[type=range] {
+            width: 100%
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 209, 102, 0.12);
+            border: 1px solid rgba(255, 209, 102, 0.08);
+            color: var(--accent);
+            cursor: pointer;
+            margin-top: 10px
+        }
+
+        .small {
+            font-size: 12px;
+            color: #9fb0c8
+        }
+
+        .verse {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #dceefb
+        }
+
+        .footer {
+            position: absolute;
+            left: 10px;
+            bottom: 10px;
+            color: #98b6d3;
+            font-size: 12px
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--muted)
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="canvas-wrap" id="stage">
+            <canvas id="c"></canvas>
+            <div class="footer">천부경 시각화 — 일(一)·삼(三)·만(萬) · 천·지·인</div>
+        </div>
+
+        <aside class="sidebar">
+            <h1>천부경 시각화</h1>
+            <div class="small">간단한 철학적 시각화 + 텍스트 전시</div>
+
+            <label>파티클 수 <span id="countLabel" class="small">180</span></label>
+            <input id="count" type="range" min="10" max="800" value="180">
+
+            <label>속도 <span id="speedLabel" class="small">1.0</span></label>
+            <input id="speed" type="range" min="0" max="3" step="0.05" value="1">
+
+            <label>리듬(박자) <span id="beatLabel" class="small">1</span></label>
+            <input id="beat" type="range" min="0.2" max="3" step="0.1" value="1">
+
+            <label>테마</label>
+            <select id="theme">
+                <option value="taegeuk">태극 (천·지·인 색)</option>
+                <option value="monochrome">단색 (심플)</option>
+                <option value="fire">불(강렬)</option>
+                <option value="water">물(차분)</option>
+            </select>
+
+            <div style="margin-top:10px" class="controls-row">
+                <button id="toggle" class="btn">일시정지</button>
+                <button id="nextVerse" class="btn">다음 구절</button>
+                <button id="reset" class="btn">리셋</button>
+            </div>
+
+            <div class="verse" id="verseBox">
+                <!-- 초기 구절 -->
+            </div>
+
+            <div style="margin-top:12px" class="small">
+                사용법: 슬라이더/테마로 비주얼을 조절하세요. "다음 구절"으로 천부경 문구를 순회합니다.
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        /*
+          천부경 시각화 — HTML5 Canvas + Vanilla JS
+          주요 개념:
+          - 파티클을 원형 궤도로 돌게 하고, 중앙의 '일/삼/만' 리듬에 따라 크기/색 변화
+          - 왼쪽 사이드바에서 파라미터를 조절 가능
+          - 간단한 구절 순회(실제 천부경 문구를 간략화하여 사용)
+        */
+
+        // ----------------- 설정 및 텍스트 -----------------
+        const VERSES = [
+            "一始無始 一析三極 無盡本天 一",
+            "天地人合 一體運行 萬物含生",
+            "一生一成 三貫萬象 無始而有"
+            // 필요하면 더 추가
+        ];
+
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let W = 0, H = 0;
+        function resize() { W = canvas.width = canvas.clientWidth; H = canvas.height = canvas.clientHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // ----------------- UI 연결 -----------------
+        const countInput = document.getElementById('count');
+        const speedInput = document.getElementById('speed');
+        const beatInput = document.getElementById('beat');
+        const themeSel = document.getElementById('theme');
+        const toggleBtn = document.getElementById('toggle');
+        const nextVerseBtn = document.getElementById('nextVerse');
+        const resetBtn = document.getElementById('reset');
+        const verseBox = document.getElementById('verseBox');
+        const countLabel = document.getElementById('countLabel');
+        const speedLabel = document.getElementById('speedLabel');
+        const beatLabel = document.getElementById('beatLabel');
+
+        countLabel.textContent = countInput.value;
+        speedLabel.textContent = parseFloat(speedInput.value).toFixed(2);
+        beatLabel.textContent = beatInput.value;
+        let paused = false;
+        let verseIndex = 0;
+        verseBox.textContent = VERSES[verseIndex];
+
+        // ----------------- 파티클 정의 -----------------
+        class Particle {
+            constructor(i, total) {
+                this.i = i; this.total = total;
+                this.reset();
+            }
+            reset() {
+                const r = Math.random() * 0.4 + 0.1;
+                this.angle = (this.i / this.total) * Math.PI * 2;
+                this.radiusBase = Math.min(W, H) * (0.12 + r * 0.4);
+                this.sizeBase = 1 + Math.random() * 3;
+                this.offset = (Math.random() - 0.5) * 50;
+                this.phase = Math.random() * Math.PI * 2;
+                this.speed = 0.002 + Math.random() * 0.006;
+            }
+            update(dt, t, params) {
+                // 중심에서 돌게 하고, beat에 따라 크기 변화
+                const spin = params.speed * (0.3 + (this.i / this.total));
+                this.angle += spin * dt * this.speed;
+                this.phase += dt * 0.004;
+
+                // 리듬(beat)에 따라 맥동
+                const beat = Math.sin(t * params.beat + this.i * 0.05) * 0.5 + 0.5;
+                this.r = this.radiusBase * (0.6 + 0.6 * beat + this.offset / 1000);
+                this.x = W / 2 + Math.cos(this.angle) * this.r;
+                this.y = H / 2 + Math.sin(this.angle) * this.r;
+                this.size = this.sizeBase * (0.8 + beat * params.sizeMultiplier);
+                this.alpha = 0.35 + 0.65 * beat;
+            }
+            draw(ctx, themeFunc) {
+                ctx.beginPath();
+                ctx.globalAlpha = Math.max(0, Math.min(1, this.alpha));
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                const grad = ctx.createRadialGradient(this.x, this.y, this.size * 0.1, this.x, this.y, this.size * 4);
+                const cols = themeFunc(this);
+                grad.addColorStop(0, cols[0]);
+                grad.addColorStop(1, cols[1]);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // ----------------- 시뮬레이션 초기화 -----------------
+        let particles = [];
+        function makeParticles(n) {
+            particles = [];
+            for (let i = 0; i < n; i++) particles.push(new Particle(i, n));
+        }
+        makeParticles(parseInt(countInput.value));
+
+        // ----------------- 테마 함수들 -----------------
+        function theme_taegeuk(p) {
+            // 천(파), 지(주황), 인(초록)을 혼합
+            const a = `rgba(${30 + Math.floor((p.i % 40) * 3)}, ${120 + Math.floor((p.size * 10))}, ${200 - (p.i % 60)}, ${0.9})`;
+            const b = `rgba(${200 - (p.i % 80)}, ${150 + Math.floor(p.size * 2)}, ${80 + (p.i % 60)}, 0.04)`;
+            return [a, b];
+        }
+        function theme_monochrome(p) {
+            const c1 = 200 - Math.floor(p.size * 10);
+            return [`rgba(${c1},${c1},${c1},0.95)`, `rgba(${c1},${c1},${c1},0.03)`];
+        }
+        function theme_fire(p) {
+            const a = `rgba(${220}, ${80 + (p.i % 120)}, ${20}, 0.95)`;
+            const b = `rgba(120,40,10,0.03)`;
+            return [a, b];
+        }
+        function theme_water(p) {
+            const a = `rgba(20, ${150 + (p.i % 90)}, ${220}, 0.95)`;
+            const b = `rgba(10,30,80,0.03)`;
+            return [a, b];
+        }
+        function getThemeFunc(name) {
+            switch (name) {
+                case 'taegeuk': return theme_taegeuk;
+                case 'monochrome': return theme_monochrome;
+                case 'fire': return theme_fire;
+                case 'water': return theme_water;
+                default: return theme_taegeuk;
+            }
+        }
+
+        // ----------------- 애니메이션 루프 -----------------
+        let last = performance.now();
+        let acc = 0;
+        let t = 0;
+        function loop(now) {
+            const dt = (now - last) * 0.001; last = now;
+            if (!paused) {
+                update(dt);
+            }
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        function update(dt) {
+            t += dt;
+            const params = {
+                speed: parseFloat(speedInput.value),
+                beat: parseFloat(beatInput.value) * 2.0,
+                sizeMultiplier: 2.2
+            };
+            for (const p of particles) p.update(dt, t, params);
+
+            // 가벼운 자동 리듬으로 중앙 확대/축소 효과
+            acc += dt;
+            if (acc > 20) { // 오래되면 가끔 리셋
+                for (const p of particles) p.reset();
+                acc = 0;
+            }
+        }
+
+        function render() {
+            // 배경
+            ctx.fillStyle = '#04121a';
+            ctx.fillRect(0, 0, W, H);
+
+            // 중심 빛
+            const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.8);
+            g.addColorStop(0, 'rgba(8,24,48,0.35)');
+            g.addColorStop(1, 'rgba(4,8,12,0.95)');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, W, H);
+
+            // 파티클 그리기 (뒤에서 앞으로)
+            const themeFunc = getThemeFunc(themeSel.value);
+            // 약간의 블룸을 표현하기 위해 여러 레이어로 그림
+            ctx.globalCompositeOperation = 'lighter';
+            for (const p of particles) p.draw(ctx, themeFunc);
+            ctx.globalCompositeOperation = 'source-over';
+
+            // 중앙 원 및 텍스트(일/삼/만 - 현재 구절의 핵심 단어 강조)
+            const cx = W / 2, cy = H / 2;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.fillStyle = 'rgba(255,255,255,0.02)';
+            ctx.beginPath();
+            ctx.arc(0, 0, Math.min(W, H) * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 중심 텍스트
+            ctx.fillStyle = 'rgba(255, 230, 120, 0.95)';
+            ctx.font = `bold ${Math.floor(Math.min(W, H) * 0.05)}px Noto Sans KR, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // 핵심 단어를 간단히 추출 (임시): 일 / 삼 / 만 교체
+            const keywords = ['一', '三', '萬'];
+            const key = keywords[Math.floor((t * 0.25) % keywords.length)];
+            ctx.fillText(key, 0, 0);
+
+            // 작은 서브 텍스트: 현재 구절
+            ctx.font = `16px Noto Sans KR, sans-serif`;
+            ctx.fillStyle = 'rgba(220,240,255,0.78)';
+            ctx.fillText(VERSES[verseIndex], 0, Math.min(W, H) * 0.12 + 20);
+            ctx.restore();
+        }
+
+        // ----------------- UI 이벤트 -----------------
+        countInput.addEventListener('input', (e) => {
+            countLabel.textContent = e.target.value;
+            makeParticles(parseInt(e.target.value));
+        });
+        speedInput.addEventListener('input', (e) => {
+            speedLabel.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+        beatInput.addEventListener('input', (e) => {
+            beatLabel.textContent = e.target.value;
+        });
+        toggleBtn.addEventListener('click', () => {
+            paused = !paused;
+            toggleBtn.textContent = paused ? '재개' : '일시정지';
+        });
+        nextVerseBtn.addEventListener('click', () => {
+            verseIndex = (verseIndex + 1) % VERSES.length;
+            verseBox.textContent = VERSES[verseIndex];
+            // 구절 전환에 반응해 파티클 재배치(미세효과)
+            for (const p of particles) {
+                p.radiusBase *= 0.92 + Math.random() * 0.16;
+                p.phase += Math.random() * 1.2 - 0.6;
+            }
+        });
+        resetBtn.addEventListener('click', () => {
+            makeParticles(parseInt(countInput.value));
+            verseIndex = 0;
+            verseBox.textContent = VERSES[verseIndex];
+        });
+
+        // 캔버스 크기 초기화 (CSS 기반)
+        function fitCanvas() {
+            const rect = document.getElementById('stage').getBoundingClientRect();
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            resize();
+        }
+        window.addEventListener('load', fitCanvas);
+        window.addEventListener('resize', fitCanvas);
+
+        // 시작
+        requestAnimationFrame(loop);
+    </script>
+</body>
+
+</html>
