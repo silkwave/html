@@ -30,6 +30,7 @@
       .sidebar-header {
         padding: 12px;
       }
+
       #add-memo-btn,
       .io-btn {
         width: 100%;
@@ -41,10 +42,12 @@
         border-radius: 6px;
         cursor: pointer;
       }
+
       #add-memo-btn:hover,
       .io-btn:hover {
         background: #0059c8;
       }
+
       #memo-list {
         list-style: none;
         padding: 0;
@@ -55,6 +58,7 @@
       .memo-item-container {
         border-bottom: 1px solid #383838;
       }
+
       .memo-item {
         padding: 8px 12px;
         cursor: pointer;
@@ -62,15 +66,18 @@
         justify-content: space-between;
         align-items: center;
       }
+
       .memo-item.selected {
         background: #2e3b4a;
       }
+
       .memo-title-text {
         flex-grow: 1;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+
       .memo-actions button {
         margin-left: 4px;
         background: none;
@@ -78,6 +85,7 @@
         cursor: pointer;
         color: #a0a0a5;
       }
+
       .memo-actions button:hover {
         color: #fff;
       }
@@ -94,6 +102,7 @@
         flex-direction: column;
         height: 100%;
       }
+
       #memo-title {
         font-size: 20px;
         padding: 12px;
@@ -103,6 +112,7 @@
         background: #3a3a3a;
         color: #fff;
       }
+
       #memo-content {
         flex-grow: 1;
         width: 100%;
@@ -168,16 +178,20 @@
         border: none;
         cursor: pointer;
       }
+
       #modal-confirm-btn {
         background: #ff453a;
         color: #fff;
       }
+      
       #modal-cancel-btn {
         background: #555;
         color: #fff;
       }
+
     </style>
   </head>
+
   <body>
     <div id="toast-container"></div>
 
@@ -210,368 +224,361 @@
     </div>
 
     <script>
-
       // DOMContentLoaded 이벤트 리스너: 문서 로드 완료 후 실행
       document.addEventListener("DOMContentLoaded", () => {
-                // 로컬 스토리지 키, 디바운스 지연 시간 설정
-                const STORAGE_KEY = "vanilla-memos",
-                  DEBOUNCE_DELAY = 500;
-                // 메모 데이터, 현재 선택된 메모 ID, 파일 핸들 변수 초기화
-                let memos = [],
-                  currentMemoId = null,
-                  fileHandle = null;
-        
-                // DOM 요소 가져오기
-                const memoList = document.getElementById("memo-list"),
-                  mainContent = document.getElementById("main-content");
-        
-                // HTML 요소를 생성하는 헬퍼 함수
-                const createElement = (tag, className, innerHTML, attrs = {}) => {
-                  const el = document.createElement(tag);
-                  if (className) el.className = className;
-                  if (innerHTML) el.innerHTML = innerHTML;
-                  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
-                  return el;
-                };
-                // ID로 메모를 찾는 재귀 함수
-                const findMemoById = (nodes, id) => {
-                  for (const n of nodes) {
-                    if (n.id === id) return n;
-                    if (n.children) {
-                      const f = findMemoById(n.children, id);
-                      if (f) return f;
-                    }
-                  }
-                  return null;
-                };
-                // 메모 구조를 순회하며 isExpanded 속성을 마이그레이션하는 함수
-                const traverseAndMigrate = (nodes) =>
-                  nodes.map((n) => ({
-                    ...n,
-                    isExpanded: n.isExpanded !== undefined ? n.isExpanded : true,
-                    children: n.children ? traverseAndMigrate(n.children) : [],
-                  }));
-                // ID로 메모를 삭제하는 재귀 함수
-                const removeMemoById = (nodes, id) => {
-                  const i = nodes.findIndex((n) => n.id === id);
-                  if (i > -1) {
-                    nodes.splice(i, 1);
-                    return true;
-                  }
-                  for (const n of nodes) {
-                    if (n.children && removeMemoById(n.children, id)) return true;
-                  }
-                  return false;
-                };
+        // 로컬 스토리지 키, 디바운스 지연 시간 설정
+        const STORAGE_KEY = "vanilla-memos",
+        DEBOUNCE_DELAY = 500;
+        // 메모 데이터, 현재 선택된 메모 ID, 파일 핸들 변수 초기화
+        let memos = [],
+          currentMemoId = null,
+          fileHandle = null;
 
-                // 메모를 로컬 스토리지에 저장
-                const saveMemos = () =>
-                  localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
-                // 로컬 스토리지에서 메모를 불러오기
-                const loadMemos = () => {
-                  const d = localStorage.getItem(STORAGE_KEY);
-                  memos = d ? traverseAndMigrate(JSON.parse(d)) : [];
-                };
+        // DOM 요소 가져오기
+        const memoList = document.getElementById("memo-list"),
+          mainContent = document.getElementById("main-content");
 
-                // 토스트 메시지 표시
-                const showToast = (msg, type = "success") => {
-                  const t = createElement("div", "toast", msg);
-                  document.getElementById("toast-container").appendChild(t);
-                  setTimeout(() => t.remove(), 3000);
-                };
+        // HTML 요소를 생성하는 헬퍼 함수
+        const createElement = (tag, className, innerHTML, attrs = {}) => {
+          const el = document.createElement(tag);
+          if (className) el.className = className;
+          if (innerHTML) el.innerHTML = innerHTML;
+          Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+          return el;
+        };
+        // ID로 메모를 찾는 재귀 함수
+        const findMemoById = (nodes, id) => {
+          for (const n of nodes) {
+            if (n.id === id) return n;
+            if (n.children) {
+              const f = findMemoById(n.children, id);
+              if (f) return f;
+            }
+          }
+          return null;
+        };
+        // 메모 구조를 순회하며 isExpanded 속성을 마이그레이션하는 함수
+        const traverseAndMigrate = (nodes) =>
+          nodes.map((n) => ({
+            ...n,
+            isExpanded: n.isExpanded !== undefined ? n.isExpanded : true,
+            children: n.children ? traverseAndMigrate(n.children) : [],
+          }));
+        // ID로 메모를 삭제하는 재귀 함수
+        const removeMemoById = (nodes, id) => {
+          const i = nodes.findIndex((n) => n.id === id);
+          if (i > -1) {
+            nodes.splice(i, 1);
+            return true;
+          }
+          for (const n of nodes) {
+            if (n.children && removeMemoById(n.children, id)) return true;
+          }
+          return false;
+        };
 
-                // 모달 창 표시 및 사용자 응답 처리
-                const showModal = (title, msg) =>
-                  new Promise((res) => {
-                    const overlay = document.getElementById("modal-overlay");
-                    overlay.style.display = "flex";
-                    document.getElementById("modal-title").textContent = title;
-                    document.getElementById("modal-message").textContent = msg;
-                    const c = document.getElementById("modal-confirm-btn"),
-                      x = document.getElementById("modal-cancel-btn");
-                    const close = (v) => {
-                      overlay.style.display = "none";
-                      c.replaceWith(c.cloneNode(true));
-                      x.replaceWith(x.cloneNode(true));
-                      res(v);
-                    };
-                    
-                    c.addEventListener("click", () => close(true), { once: true });
-                    x.addEventListener("click", () => close(false), { once: true });
-                  });
+        // 메모를 로컬 스토리지에 저장
+        const saveMemos = () =>
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+        // 로컬 스토리지에서 메모를 불러오기
+        const loadMemos = () => {
+          const d = localStorage.getItem(STORAGE_KEY);
+          memos = d ? traverseAndMigrate(JSON.parse(d)) : [];
+        };
 
-                // 문자열을 Base64로 인코딩
-                const encodeBase64 = (s) => btoa(unescape(encodeURIComponent(s)));
-                // Base64 문자열을 디코딩
-                const decodeBase64 = (s) => decodeURIComponent(escape(atob(s)));
-        
-                // 메모 목록을 렌더링
-                const renderMemoList = () => {
-                  memoList.innerHTML = "";
-                  if (memos.length === 0) {
-                    memoList.appendChild(
-                      createElement("li", "memo-item", "메모가 없습니다.")
-                    );
-                    return;
-                  }
-                  memos.forEach((m) => renderNode(m, 0, memoList));
-                };
-        
-                // 개별 메모 노드를 렌더링 (재귀적으로 자식 메모 처리)
-                const renderNode = (memo, depth, container) => {
-                  const li = createElement("div", "memo-item-container");
-                  const item = createElement("div", "memo-item");
-                  item.style.paddingLeft = `${16 + depth * 20}px`;
-                  if (memo.id === currentMemoId) item.classList.add("selected");
-        
-                  const titleSpan = createElement(
-                    "span",
-                    "memo-title-text",
-                    memo.title
-                  );
+        // 토스트 메시지 표시
+        const showToast = (msg, type = "success") => {
+          const t = createElement("div", "toast", msg);
+          document.getElementById("toast-container").appendChild(t);
+          setTimeout(() => t.remove(), 3000);
+        };
 
-                  titleSpan.addEventListener("click", () => {
-                    currentMemoId = memo.id;
-                    renderMemoList();
-                    renderEditor();
-                  });
-        
-                  const actions = createElement("div", "memo-actions");
-                  const addChild = createElement("button", null, "➕");
-                  addChild.title = "자식 추가";
-                  addChild.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    addChildMemo(memo.id);
-                  });
+        // 모달 창 표시 및 사용자 응답 처리
+        const showModal = (title, msg) =>
+          new Promise((res) => {
+            const overlay = document.getElementById("modal-overlay");
+            overlay.style.display = "flex";
+            document.getElementById("modal-title").textContent = title;
+            document.getElementById("modal-message").textContent = msg;
+            const c = document.getElementById("modal-confirm-btn"),
+              x = document.getElementById("modal-cancel-btn");
+            const close = (v) => {
+              overlay.style.display = "none";
+              c.replaceWith(c.cloneNode(true));
+              x.replaceWith(x.cloneNode(true));
+              res(v);
+            };
 
-                  const del = createElement("button", null, "❌");
-                  del.title = "삭제";
-                  del.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    deleteMemo(memo.id);
-                  });
+            c.addEventListener("click", () => close(true), { once: true });
+            x.addEventListener("click", () => close(false), { once: true });
+          });
 
-                  actions.append(addChild, del);
-        
-                  const toggle = createElement(
-                    "button",
-                    null,
-                    memo.isExpanded ? "▼" : "▶"
-                  );
+        // 문자열을 Base64로 인코딩
+        const encodeBase64 = (s) => btoa(unescape(encodeURIComponent(s)));
+        // Base64 문자열을 디코딩
+        const decodeBase64 = (s) => decodeURIComponent(escape(atob(s)));
 
-                  toggle.title = "접기/펼치기";
-                  toggle.style.marginRight = "4px";
-                  toggle.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    memo.isExpanded = !memo.isExpanded;
-                    saveMemos();
-                    renderMemoList();
-                  });
+        // 메모 목록을 렌더링
+        const renderMemoList = () => {
+          memoList.innerHTML = "";
+          if (memos.length === 0) {
+            memoList.appendChild(
+              createElement("li", "memo-item", "메모가 없습니다.")
+            );
+            return;
+          }
+          memos.forEach((m) => renderNode(m, 0, memoList));
+        };
 
-                  toggle.style.visibility =
-                    memo.children.length > 0 ? "visible" : "hidden";
-        
-                  item.append(toggle, titleSpan, actions);
-                  li.appendChild(item);
-                  container.appendChild(li);
-        
-                  if (memo.isExpanded && memo.children.length > 0)
-                    memo.children.forEach((c) => renderNode(c, depth + 1, container));
+        // 개별 메모 노드를 렌더링 (재귀적으로 자식 메모 처리)
+        const renderNode = (memo, depth, container) => {
+          const li = createElement("div", "memo-item-container");
+          const item = createElement("div", "memo-item");
+          item.style.paddingLeft = `${16 + depth * 20}px`;
+          if (memo.id === currentMemoId) item.classList.add("selected");
 
-                };
-        
-                // 메모 편집기를 렌더링
-                const renderEditor = () => {
+          const titleSpan = createElement(
+            "span",
+            "memo-title-text",
+            memo.title
+          );
 
-                  const memo = findMemoById(memos, currentMemoId);
-                  mainContent.innerHTML = "";
-                  if (!memo) {
-                    mainContent.innerHTML =
-                      '<div class="placeholder"><span>메모를 선택하거나 새로 만드세요.</span></div>';
-                    return;
-                  }
-                  const title = createElement("input", null, null, {
-                    id: "memo-title",
-                    type: "text",
-                    value: memo.title,
-                  });
+          titleSpan.addEventListener("click", () => {
+            currentMemoId = memo.id;
+            renderMemoList();
+            renderEditor();
+          });
 
-                  const content = createElement("textarea", null, memo.content, {
-                    id: "memo-content",
-                  });
+          const actions = createElement("div", "memo-actions");
+          const addChild = createElement("button", null, "➕");
+          addChild.title = "자식 추가";
+          addChild.addEventListener("click", (e) => {
+            e.stopPropagation();
+            addChildMemo(memo.id);
+          });
 
-                  const container = createElement("div", "editor-container");
-                  container.append(title, content);
-                  mainContent.appendChild(container);
-        
-                  let debounce;
-                  // 자동 저장 (디바운스 적용)
-                  const autosave = () => {
-                    clearTimeout(debounce);
-                    debounce = setTimeout(() => {
-                      const m = findMemoById(memos, currentMemoId);
-                      if (m) {
-                        m.title = title.value;
-                        m.content = content.value;
-                        saveMemos();
-                        renderMemoList();
-                      }
-                    }, DEBOUNCE_DELAY);
-                  };
+          const del = createElement("button", null, "❌");
+          del.title = "삭제";
+          del.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteMemo(memo.id);
+          });
 
-                  title.addEventListener("input", autosave);
-                  content.addEventListener("input", autosave);
+          actions.append(addChild, del);
 
-                };
-        
-                // 새 루트 메모 추가 버튼 이벤트 리스너
-                document
-                  .getElementById("add-memo-btn")
-                  .addEventListener("click", () => {
-                    const m = {
-                      id: Date.now().toString(),
-                      title: "새 루트 메모",
-                      content: "",
-                      children: [],
-                      isExpanded: true,
-                    };
+          const toggle = createElement(
+            "button",
+            null,
+            memo.isExpanded ? "▼" : "▶"
+          );
 
-                    memos.unshift(m);
-                    currentMemoId = m.id;
-                    saveMemos();
-                    renderMemoList();
-                    renderEditor();
-                    document.getElementById("memo-title").focus();
-                    document.getElementById("memo-title").select();
-                  });
-        
-                // 자식 메모 추가 함수
-                const addChildMemo = (parentId) => {
+          toggle.title = "접기/펼치기";
+          toggle.style.marginRight = "4px";
+          toggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            memo.isExpanded = !memo.isExpanded;
+            saveMemos();
+            renderMemoList();
+          });
 
-                  const parent = findMemoById(memos, parentId);
-                  if (!parent) return;
-                  const m = {
-                    id: Date.now().toString(),
-                    title: "새 자식 메모",
-                    content: "",
-                    children: [],
-                    isExpanded: true,
-                  };
+          toggle.style.visibility =
+            memo.children.length > 0 ? "visible" : "hidden";
 
-                  parent.children.unshift(m);
-                  parent.isExpanded = true;
-                  saveMemos();
-                  currentMemoId = m.id;
-                  renderMemoList();
-                  renderEditor();
-                  document.getElementById("memo-title").focus();
-                  document.getElementById("memo-title").select();
-                };
-        
-                // 메모 삭제 함수
-                const deleteMemo = async (id) => {
-                  if (!id) return;
-                  const confirmed = await showModal(
-                    "메모 삭제",
-                    "정말 삭제하시겠습니까?"
-                  );
+          item.append(toggle, titleSpan, actions);
+          li.appendChild(item);
+          container.appendChild(li);
 
-                  if (confirmed) {
-                    if (removeMemoById(memos, id)) {
-                      saveMemos();
-                      if (currentMemoId === id) currentMemoId = null;
-                      renderMemoList();
-                      renderEditor();
-                      showToast("삭제 완료");
-                    }
-                  }
-                };
+          if (memo.isExpanded && memo.children.length > 0)
+            memo.children.forEach((c) => renderNode(c, depth + 1, container));
+        };
 
-        
-                // 파일 저장 함수 (File System Access API 사용)
-                const saveFile = async () => {
-                  if (memos.length === 0) {
-                    showToast("저장할 메모 없음", "error");
-                    return;
-                  }
+        // 메모 편집기를 렌더링
+        const renderEditor = () => {
+          const memo = findMemoById(memos, currentMemoId);
+          mainContent.innerHTML = "";
+          if (!memo) {
+            mainContent.innerHTML =
+              '<div class="placeholder"><span>메모를 선택하거나 새로 만드세요.</span></div>';
+            return;
+          }
+          const title = createElement("input", null, null, {
+            id: "memo-title",
+            type: "text",
+            value: memo.title,
+          });
 
-                  const data = encodeBase64(JSON.stringify(memos));
-                  try {
-                    // 기존 파일 핸들이 있으면 덮어쓰기 확인
-                    if (fileHandle) {
-                      const confirmed = await showModal(
-                        "파일 저장",
-                        `'${fileHandle.name}' 덮어쓰기?`
-                      );
-                      if (!confirmed) return;
-                      const w = await fileHandle.createWritable();
-                      await w.write(data);
-                      await w.close();
-                    } else {
-                      // 새 파일로 저장
-                      const h = await window.showSaveFilePicker({
-                        suggestedName: "memos.json",
-                      });
-                      fileHandle = h;
-                      const w = await fileHandle.createWritable();
-                      await w.write(data);
-                      await w.close();
-                    }
-                    showToast("파일 저장 완료");
-                  } catch (e) {
-                    // 사용자가 취소했거나 다른 오류 발생 시
-                    if (e.name !== "AbortError") showToast("파일 저장 실패", "error");
-                  }
-                };
-        
-                // 파일 열기 함수 (File System Access API 사용)
-                const openFile = async () => {
-                  const confirmed = await showModal(
-                    "파일 열기",
-                    "현재 메모 모두 교체됩니다. 계속?"
-                  );
+          const content = createElement("textarea", null, memo.content, {
+            id: "memo-content",
+          });
 
-                  if (!confirmed) return;
-                  try {
-                    const [handle] = await window.showOpenFilePicker({
-                      types: [
-                        {
-                          description: "JSON Files",
-                          accept: { "application/json": [".json"] },
-                        },
-                      ],
-                    });
+          const container = createElement("div", "editor-container");
+          container.append(title, content);
+          mainContent.appendChild(container);
 
-                    fileHandle = handle;
-                    const file = await handle.getFile();
-                    const content = await file.text();
-                    // Base64 디코딩 후 메모 로드
-                    memos = traverseAndMigrate(JSON.parse(decodeBase64(content)));
-                    currentMemoId = memos.length > 0 ? memos[0].id : null;
-                    saveMemos();
-                    renderMemoList();
-                    renderEditor();
-                    showToast("메모 불러오기 완료");
-                  } catch (e) {
-                    // 사용자가 취소했거나 다른 오류 발생 시
-                    if (e.name !== "AbortError") showToast("파일 열기 실패", "error");
-                  }
-                };
-        
-                // 파일 저장/열기 버튼 이벤트 리스너
-                document.getElementById("save-btn").addEventListener("click", saveFile);
-                document
-                  .getElementById("open-file-btn")
-                  .addEventListener("click", openFile);
-        
-                // 초기 로드 및 렌더링
-                loadMemos();
-                // 현재 선택된 메모가 없거나 유효하지 않으면 첫 번째 메모를 선택
-                if (memos.length > 0 && !findMemoById(memos, currentMemoId))
-                  currentMemoId = memos[0].id;
+          let debounce;
+          // 자동 저장 (디바운스 적용)
+          const autosave = () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+              const m = findMemoById(memos, currentMemoId);
+              if (m) {
+                m.title = title.value;
+                m.content = content.value;
+                saveMemos();
                 renderMemoList();
-                renderEditor();
-              });    
+              }
+            }, DEBOUNCE_DELAY);
+          };
+
+          title.addEventListener("input", autosave);
+          content.addEventListener("input", autosave);
+        };
+
+        // 새 루트 메모 추가 버튼 이벤트 리스너
+        document
+          .getElementById("add-memo-btn")
+          .addEventListener("click", () => {
+            const m = {
+              id: Date.now().toString(),
+              title: "새 루트 메모",
+              content: "",
+              children: [],
+              isExpanded: true,
+            };
+
+            memos.unshift(m);
+            currentMemoId = m.id;
+            saveMemos();
+            renderMemoList();
+            renderEditor();
+            document.getElementById("memo-title").focus();
+            document.getElementById("memo-title").select();
+          });
+
+        // 자식 메모 추가 함수
+        const addChildMemo = (parentId) => {
+          const parent = findMemoById(memos, parentId);
+          if (!parent) return;
+          const m = {
+            id: Date.now().toString(),
+            title: "새 자식 메모",
+            content: "",
+            children: [],
+            isExpanded: true,
+          };
+
+          parent.children.unshift(m);
+          parent.isExpanded = true;
+          saveMemos();
+          currentMemoId = m.id;
+          renderMemoList();
+          renderEditor();
+          document.getElementById("memo-title").focus();
+          document.getElementById("memo-title").select();
+        };
+
+        // 메모 삭제 함수
+        const deleteMemo = async (id) => {
+          if (!id) return;
+
+          const confirmed = await showModal(
+            "메모 삭제",
+            "정말 삭제하시겠습니까?"
+          );
+          if (!confirmed) return;
+
+          if (!removeMemoById(memos, id)) return;
+
+          saveMemos();
+          if (currentMemoId === id) currentMemoId = null;
+          renderMemoList();
+          renderEditor();
+          showToast("삭제 완료");
+        };
+
+        // 파일 저장 함수 (File System Access API 사용)
+        const saveFile = async () => {
+          if (memos.length === 0) {
+            showToast("저장할 메모 없음", "error");
+            return;
+          }
+
+          const data = encodeBase64(JSON.stringify(memos));
+          try {
+            // 기존 파일 핸들이 있으면 덮어쓰기 확인
+            if (fileHandle) {
+              const confirmed = await showModal(
+                "파일 저장",
+                `'${fileHandle.name}' 덮어쓰기?`
+              );
+              if (!confirmed) return; // User cancelled overwrite
+            } else {
+              // 새 파일로 저장
+              fileHandle = await window.showSaveFilePicker({
+                suggestedName: "memos.json",
+              });
+            }
+
+            // 이제 fileHandle은 (기존 핸들이거나 새로 얻은 핸들이거나) 설정되어 있음
+            const w = await fileHandle.createWritable();
+            await w.write(data);
+            await w.close();
+            showToast("파일 저장 완료");
+          } catch (e) {
+            // 사용자가 취소했거나 다른 오류 발생 시
+            if (e.name !== "AbortError") showToast("파일 저장 실패", "error");
+            fileHandle = null; // 저장 실패 시 fileHandle 초기화
+          }
+        };
+
+        // 파일 열기 함수 (File System Access API 사용)
+        const openFile = async () => {
+          const confirmed = await showModal(
+            "파일 열기",
+            "현재 메모 모두 교체됩니다. 계속?"
+          );
+
+          if (!confirmed) return;
+          try {
+            const [handle] = await window.showOpenFilePicker({
+              types: [
+                {
+                  description: "JSON Files",
+                  accept: { "application/json": [".json"] },
+                },
+              ],
+            });
+
+            fileHandle = handle;
+            const file = await handle.getFile();
+            const content = await file.text();
+            // Base64 디코딩 후 메모 로드
+            memos = traverseAndMigrate(JSON.parse(decodeBase64(content)));
+            currentMemoId = memos.length > 0 ? memos[0].id : null;
+            saveMemos();
+            renderMemoList();
+            renderEditor();
+            showToast("메모 불러오기 완료");
+          } catch (e) {
+            // 사용자가 취소했거나 다른 오류 발생 시
+            if (e.name !== "AbortError") showToast("파일 열기 실패", "error");
+          }
+        };
+
+        // 파일 저장/열기 버튼 이벤트 리스너
+        document.getElementById("save-btn").addEventListener("click", saveFile);
+        document
+          .getElementById("open-file-btn")
+          .addEventListener("click", openFile);
+
+        // 초기 로드 및 렌더링
+        loadMemos();
+        // 현재 선택된 메모가 없거나 유효하지 않으면 첫 번째 메모를 선택
+        if (memos.length > 0 && !findMemoById(memos, currentMemoId))
+          currentMemoId = memos[0].id;
+        renderMemoList();
+        renderEditor();
+      });
     </script>
   </body>
 </html>
