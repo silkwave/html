@@ -2,283 +2,255 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <!-- 문자 인코딩을 UTF-8로 설정 -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- 반응형 웹 설정을 위한 뷰포트 메타 태그 -->
-    <title>INSERT 생성기</title>
-    <!-- 웹 페이지의 제목 설정 -->
+    <title>SQL 생성기</title>
 
     <style>
-      /* 기본 스타일 정의 */
       body {
-        font-family: Arial, sans-serif; /* 폰트 설정 */
-        margin: 20px; /* 바깥 여백 설정 */
-        background: #f5f5f5; /* 배경색 설정 */
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f5f5f5;
       }
-
-      /* 컨테이너 중앙 정렬 및 최대 너비 설정 */
       .container {
-        max-width: 1200px; /* 최대 너비 설정 */
-        margin: auto; /* 가운데 정렬 */
+        max-width: 1200px;
+        margin: auto;
       }
-
-      /* 라벨 스타일 */
+      .btn-group {
+        display: flex;
+        gap: 10px;
+      }
       label {
-        font-weight: bold; /* 글자 굵기 */
-        margin-top: 12px; /* 위쪽 여백 */
-        display: block; /* 블록 레벨 요소로 표시 */
+        font-weight: bold;
+        margin-top: 12px;
+        display: block;
       }
-
-      /* 입력 필드, 텍스트 영역, 버튼 기본 스타일 */
       input,
       textarea,
       button {
-        width: 100%; /* 너비 100% */
-        box-sizing: border-box; /* 박스 모델 설정 */
-        padding: 10px; /* 안쪽 여백 */
-        margin-top: 5px; /* 위쪽 여백 */
-        font-size: 16px; /* 폰트 크기 */
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        margin-top: 5px;
+        font-size: 16px;
       }
-
-      /* 입력 텍스트 영역 스타일 */
       textarea {
-        min-height: 300px; /* 최소 높이 */ /* 🔥 더 커진 입력창 */
-        resize: vertical; /* 세로 크기 조절 가능 */
+        min-height: 300px;
+        resize: vertical;
       }
-
-      /* 출력 텍스트 영역 스타일 */
       #output {
-        min-height: 350px; /* 최소 높이 */ /* 🔥 더 커진 출력창 */
-        background: #222; /* 배경색 */
-        color: #0f0; /* 글자색 */
-        font-family: Consolas, monospace; /* 폰트 */
-        border-radius: 4px; /* 테두리 둥글게 */
-        padding: 15px; /* 안쪽 여백 */
+        min-height: 350px;
+        background: #222;
+        color: #0f0;
+        font-family: Consolas, monospace;
+        border-radius: 4px;
+        padding: 15px;
       }
-
-      /* 버튼 기본 스타일 */
       button {
-        margin-top: 15px; /* 위쪽 여백 */
-        font-size: 18px; /* 폰트 크기 */
-        padding: 12px; /* 안쪽 여백 */
-        border: none; /* 테두리 없음 */
-        border-radius: 6px; /* 테두리 둥글게 */
-        cursor: pointer; /* 마우스 오버 시 커서 변경 */
+        margin-top: 15px;
+        font-size: 18px;
+        padding: 12px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
       }
-
-      /* 기본 버튼 (생성) 스타일 */
       .btn-primary {
-        background: #0066ff; /* 배경색 */
-        color: white; /* 글자색 */
+        background: #0066ff;
+        color: white;
       }
-
-      /* 보조 버튼 (복사) 스타일 */
       .btn-secondary {
-        background: #555; /* 배경색 */
-        color: white; /* 글자색 */
+        background: #555;
+        color: white;
       }
-
-      /* 상태 메시지 영역 스타일 */
       #status-message {
-        margin-top: 15px; /* 위쪽 여백 */
-        padding: 12px; /* 안쪽 여백 */
-        border-radius: 4px; /* 테두리 둥글게 */
-        font-weight: bold; /* 글자 굵기 */
-        display: none; /* 기본적으로 숨김 */
+        margin-top: 15px;
+        padding: 12px;
+        border-radius: 4px;
+        font-weight: bold;
+        display: none;
       }
-
-      /* 성공 상태 메시지 스타일 */
       #status-message.success {
-        background-color: #d4edda; /* 배경색 */
-        color: #155724; /* 글자색 */
-        display: block; /* 표시 */
+        background-color: #d4edda;
+        color: #155724;
+        display: block;
       }
-
-      /* 에러 상태 메시지 스타일 */
       #status-message.error {
-        background-color: #f8d7da; /* 배경색 */
-        color: #721c24; /* 글자색 */
-        display: block; /* 표시 */
+        background-color: #f8d7da;
+        color: #721c24;
+        display: block;
       }
     </style>
   </head>
 
   <body>
-    <!-- 메인 컨테이너 -->
     <div class="container">
-      <!-- 페이지 제목 -->
-      <h2>INSERT 생성기</h2>
+      <h2>SQL 생성기</h2>
 
-      <!-- 테이블명 입력 섹션 -->
-      <label>테이블명</label>
+      <label for="tableNameInput">테이블명</label>
       <input type="text" id="tableNameInput" value="BOARD" />
 
-      <!-- 데이터 입력 섹션 -->
-      <label>데이터 입력 (Excel 붙여넣기 지원)</label>
+      <label for="pkColumnsInput">PK 컬럼 (UPDATE용, 콤마로 구분)</label>
+      <input type="text" id="pkColumnsInput" value="BOARD_ID" />
+
+      <label for="inputData">데이터 입력 (Excel 붙여넣기 지원)</label>
       <textarea id="inputData">
 "BOARD_ID" "TITLE" "CONTENTS" "HIT_CNT" "DEL_YN" "CRTR_ID" "CRTE_DT" "UPDT_ID" "UPDT_DT"
-1 10 20 N 3 2025-11-04 "" 2025-11-05
-    </textarea
-      >
+1 "제목1" "내용1" 10 "N" "user1" "2025-11-15" "user1" "2025-11-15"
+2 "제목2" "내용2" 20 "N" "user2" "2025-11-15" "user2" "2025-11-15"
+    </textarea>
 
-      <!-- INSERT 생성 버튼 -->
-      <button class="btn-primary" id="generate-btn">
-        INSERT 생성
-      </button>
-      <!-- SQL 복사 버튼 -->
-      <button class="btn-secondary" id="copy-btn">복사</button>
+      <div class="btn-group">
+        <button class="btn-primary" id="generateInsertBtn">INSERT 생성</button>
+        <button class="btn-primary" id="generateUpdateBtn">UPDATE 생성</button>
+        <button class="btn-secondary" id="copyBtn">복사</button>
+      </div>
 
-      <!-- 출력 결과 섹션 -->
-      <label>출력 결과</label>
+      <label for="output">출력 결과</label>
       <textarea id="output" readonly></textarea>
 
-      <!-- 상태 메시지 표시 영역 -->
       <div id="status-message"></div>
     </div>
 
     <script>
-      (function () {
-        // DOM 요소 ID를 상수로 관리하여 유지보수성을 높입니다.
-        const UI = {
-          TABLE_NAME_INPUT: "tableNameInput",
-          INPUT_DATA: "inputData",
-          OUTPUT: "output",
-          STATUS_MESSAGE: "status-message",
-          GENERATE_BTN: "generate-btn",
-          COPY_BTN: "copy-btn",
+      document.addEventListener("DOMContentLoaded", () => {
+        const getEl = (id) => document.getElementById(id);
+
+        const ui = {
+          tableName: getEl("tableNameInput"),
+          pkColumns: getEl("pkColumnsInput"),
+          inputData: getEl("inputData"),
+          output: getEl("output"),
+          status: getEl("status-message"),
+          generateInsertBtn: getEl("generateInsertBtn"),
+          generateUpdateBtn: getEl("generateUpdateBtn"),
+          copyBtn: getEl("copyBtn"),
         };
 
-        // 애플리케이션 상태를 관리하는 객체
-        const state = {
-          elements: {},
+        const showStatus = (message, isError = false) => {
+          ui.status.textContent = message;
+          ui.status.className = isError ? "error" : "success";
         };
 
-        /* ==========================
-         * 날짜 형식 감지 및 변환
-         * ========================== */
-        function detectDate(value) {
+        const detectDate = (value) => {
           const dateFormats = [
             { regex: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, format: "YYYY-MM-DD HH24:MI:SS" },
             { regex: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/, format: "YYYY-MM-DD HH24:MI" },
-            { regex: /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/, format: "YY/MM/DD HH24:MI:SS" },
-            { regex: /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/, format: "YY/MM/DD HH24:MI" },
             { regex: /^\d{4}-\d{2}-\d{2}$/, format: "YYYY-MM-DD" },
             { regex: /^\d{2}\/\d{2}\/\d{2}$/, format: "YY/MM/DD" },
           ];
-
           for (const df of dateFormats) {
             if (df.regex.test(value)) {
               return `TO_DATE('${value}', '${df.format}')`;
             }
           }
           return null;
-        }
+        };
 
-        /* ==========================
-         * SQL 값 포맷팅
-         * ========================== */
-        function formatValue(raw) {
-          if (!raw || raw.trim() === "") {
+        const formatValue = (raw) => {
+          if (raw == null || raw.trim() === "" || raw.trim().toLowerCase() === 'null') {
             return "NULL";
           }
-
-          const value = raw.trim().replace(/^"|"$/g, "");
+          let value = raw.trim().replace(/^"|"$/g, "");
           const detectedDate = detectDate(value);
-          if (detectedDate) {
-            return detectedDate;
+          if (detectedDate) return detectedDate;
+          
+          if (!isNaN(value) && value.trim() !== "") {
+            return value;
           }
-
-          const num = value.replace(/,/g, "");
-          if (!isNaN(num) && num !== "") {
-            // 요구사항: 한 자리 숫자만 숫자 타입으로, 나머지는 문자열로 처리합니다.
-            // 이는 숫자 형식의 ID와 같은 값이 문자열로 유지되도록 보장합니다.
-            return num.length === 1 ? num : `'${value.replace(/'/g, "''")}'`;
-          }
-
+          
           return `'${value.replace(/'/g, "''")}'`;
-        }
+        };
 
-        /* ==========================
-         * 핵심 SQL 생성 로직
-         * ========================== */
-        function parseAndGenerateSql(tableName, data) {
-          if (!tableName) {
-            return { error: "테이블명을 입력하세요." };
-          }
-
-          const lines = data.split("\n").map((v) => v.trim()).filter((v) => v);
-
+        const parseInput = () => {
+          const lines = ui.inputData.value.trim().split("\n").map(v => v.trim()).filter(Boolean);
           if (lines.length < 2) {
-            return { error: "컬럼과 최소 한 줄의 데이터가 필요합니다." };
+            showStatus("컬럼과 최소 한 줄의 데이터가 필요합니다.", true);
+            return null;
           }
+          const columns = (lines[0].match(/"[^" ]*"|\S+/g) || []).map(c => c.replace(/^"|"$/g, ""));
+          const rows = lines.slice(1).map(row => row.match(/"[^" ]*"|\S+/g) || []);
+          return { columns, rows };
+        };
 
-          const columns = (lines[0].match(/"[^"]*"|\S+/g) || []).map((c) => c.replace(/"/g, ""));
-          const rows = lines.slice(1);
+        const generateInsert = () => {
+          const tableName = ui.tableName.value.trim();
+          if (!tableName) {
+            showStatus("테이블명을 입력하세요.", true);
+            return;
+          }
+          const parsed = parseInput();
+          if (!parsed) return;
 
-          const sqlList = rows.map((row) => {
-            const parts = row.match(/"[^"]*"|\S+/g) || [];
-            const padded = [...parts, ...Array(Math.max(0, columns.length - parts.length)).fill("")];
-            const formatted = padded.map(formatValue).join(", ");
-            return `INSERT INTO ${tableName} (${columns.join(", ")})\nVALUES (${formatted});`;
+          const { columns, rows } = parsed;
+          const sqlList = rows.map(row => {
+            const values = columns.map((_, i) => formatValue(row[i] || ""));
+            return `INSERT INTO ${tableName} (${columns.join(", ")})\nVALUES (${values.join(", ")});`;
           });
 
-          return { sql: sqlList.join("\n\n") };
-        }
+          ui.output.value = sqlList.join("\n\n");
+          showStatus("INSERT 문 생성 완료!");
+        };
 
-        /* ==========================
-         * UI 상태 및 메시지 표시
-         * ========================== */
-        function displayStatus(message, isError = false) {
-          const { status } = state.elements;
-          status.textContent = message;
-          status.className = isError ? "error" : "success";
-        }
-
-        /* ==========================
-         * 이벤트 핸들러
-         * ========================== */
-        function handleGenerateClick() {
-          const { tableNameInput, inputData, output } = state.elements;
-          const { sql, error } = parseAndGenerateSql(tableNameInput.value, inputData.value);
-
-          if (error) {
-            displayStatus(error, true);
-            output.value = "";
-          } else {
-            output.value = sql;
-            displayStatus("INSERT 문 생성 완료!");
+        const generateUpdate = () => {
+          const tableName = ui.tableName.value.trim();
+          if (!tableName) {
+            showStatus("테이블명을 입력하세요.", true);
+            return;
           }
-        }
+          const pkNames = ui.pkColumns.value.trim().split(',').map(pk => pk.trim()).filter(Boolean);
+          if (pkNames.length === 0) {
+            showStatus("PK 컬럼을 입력하세요.", true);
+            return;
+          }
+          const parsed = parseInput();
+          if (!parsed) return;
 
-        function handleCopyClick() {
-          const { output } = state.elements;
-          if (!output.value.trim()) return;
+          const { columns, rows } = parsed;
+          const pkIndices = pkNames.map(pkName => columns.indexOf(pkName));
 
-          navigator.clipboard.writeText(output.value).then(() => {
-            displayStatus("복사 완료!");
+          if (pkIndices.some(index => index === -1)) {
+            showStatus("입력한 PK 컬럼이 데이터에 존재하지 않습니다.", true);
+            return;
+          }
+
+          const sqlList = rows.map(row => {
+            const setClauses = [];
+            const whereClauses = [];
+
+            columns.forEach((col, i) => {
+              const value = formatValue(row[i] || "");
+              if (pkIndices.includes(i)) {
+                whereClauses.push(`${col} = ${value}`);
+              } else {
+                setClauses.push(`${col} = ${value}`);
+              }
+            });
+            
+            if (whereClauses.length === 0) return null;
+
+            return `UPDATE ${tableName} SET\n  ${setClauses.join(",\n  ")}\nWHERE ${whereClauses.join(" AND ")};`;
+          }).filter(Boolean);
+          
+          if(sqlList.length === 0){
+             showStatus("UPDATE 문을 생성할 수 없습니다. PK 값을 확인하세요.", true);
+             ui.output.value = "";
+             return;
+          }
+
+          ui.output.value = sqlList.join("\n\n");
+          showStatus("UPDATE 문 생성 완료!");
+        };
+
+        const copySql = () => {
+          if (!ui.output.value.trim()) return;
+          navigator.clipboard.writeText(ui.output.value).then(() => {
+            showStatus("복사 완료!");
           });
-        }
+        };
 
-        /* ==========================
-         * 애플리케이션 초기화
-         * ========================== */
-        function init() {
-          // 주요 DOM 요소를 한 번만 조회하여 상태에 저장합니다.
-          state.elements.tableNameInput = document.getElementById(UI.TABLE_NAME_INPUT);
-          state.elements.inputData = document.getElementById(UI.INPUT_DATA);
-          state.elements.output = document.getElementById(UI.OUTPUT);
-          state.elements.status = document.getElementById(UI.STATUS_MESSAGE);
-          state.elements.generateBtn = document.getElementById(UI.GENERATE_BTN);
-          state.elements.copyBtn = document.getElementById(UI.COPY_BTN);
-
-          // 이벤트 리스너를 등록합니다.
-          state.elements.generateBtn.addEventListener("click", handleGenerateClick);
-          state.elements.copyBtn.addEventListener("click", handleCopyClick);
-        }
-
-        // DOM이 완전히 로드된 후 애플리케이션을 초기화합니다.
-        document.addEventListener("DOMContentLoaded", init);
-      })();
+        ui.generateInsertBtn.addEventListener("click", generateInsert);
+        ui.generateUpdateBtn.addEventListener("click", generateUpdate);
+        ui.copyBtn.addEventListener("click", copySql);
+      });
     </script>
   </body>
 </html>
