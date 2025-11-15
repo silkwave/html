@@ -3,397 +3,159 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Memo App</title>
-
+    <title>Memo App Full</title>
     <style>
-      /* =======================
-         CSS 변수 및 기본 스타일
-         ======================= */
-      :root {
-        --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-
-        /* Dark Theme */
-        --background-primary: #1c1c1e;
-        --background-secondary: #2c2c2e;
-        --background-tertiary: #3a3a3c;
-        --text-primary: #ffffff;
-        --text-secondary: #a0a0a5;
-        --border-color: #38383a;
-        --accent-color: #0a84ff;
-        --accent-color-hover: #0059c8;
-        --danger-color: #ff453a;
-        --danger-color-hover: #d9362d;
-        --selected-color: #2e3b4a;
-      }
-
-      * {
-        box-sizing: border-box;
-        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-      }
-
       body {
-        font-family: var(--font-family);
         margin: 0;
+        font-family: Arial, sans-serif;
         height: 100vh;
         display: flex;
-        background-color: var(--background-secondary);
-        color: var(--text-primary);
-        overflow: hidden;
+        background: #2c2c2c;
+        color: #fff;
       }
-
-      /* =======================
-         레이아웃
-         ======================= */
       .container {
         display: flex;
         width: 100%;
         height: 100%;
       }
 
+      /* Sidebar */
       .sidebar {
         width: 280px;
-        min-width: 240px;
-        border-right: 1px solid var(--border-color);
+        background: #1c1c1c;
         display: flex;
         flex-direction: column;
-        background-color: var(--background-primary);
+        border-right: 1px solid #383838;
       }
-
       .sidebar-header {
-        padding: 16px;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+        padding: 12px;
       }
-
-      .header-top-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .app-title {
-        font-size: 20px;
-        font-weight: 600;
-      }
-
-      #add-memo-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
+      #add-memo-btn,
+      .io-btn {
         width: 100%;
         padding: 10px;
-        background-color: var(--accent-color);
-        color: white;
+        margin: 4px 0;
+        background: #0a84ff;
+        color: #fff;
         border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         cursor: pointer;
-        font-size: 16px;
-        font-weight: 500;
       }
-      #add-memo-btn:hover {
-        background-color: var(--accent-color-hover);
-      }
-
-      .file-io-buttons {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
-
-      .io-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 8px;
-        background-color: var(--background-tertiary);
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        text-align: center;
-      }
+      #add-memo-btn:hover,
       .io-btn:hover {
-        background-color: var(--border-color);
+        background: #0059c8;
       }
-
-      /* =======================
-         메모 리스트
-         ======================= */
       #memo-list {
         list-style: none;
         padding: 0;
         margin: 0;
-        overflow-y: auto;
         flex-grow: 1;
+        overflow-y: auto;
       }
-
       .memo-item-container {
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid #383838;
       }
-
       .memo-item {
-        display: flex;
-        align-items: center;
-        padding: 10px 16px;
+        padding: 8px 12px;
         cursor: pointer;
-      }
-      .memo-item:hover {
-        background-color: var(--background-tertiary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
       .memo-item.selected {
-        background-color: var(--selected-color);
+        background: #2e3b4a;
       }
-      .memo-item.selected .memo-title-text {
-        font-weight: 600;
-        color: var(--accent-color);
-      }
-
-      .memo-item-content {
-        display: flex;
-        align-items: center;
-        flex-grow: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .toggle-btn {
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        cursor: pointer;
-        font-size: 14px;
-        padding: 4px;
-        margin-right: 4px;
-        flex-shrink: 0;
-        width: 20px;
-        text-align: center;
-      }
-      .toggle-btn.hidden {
-        visibility: hidden;
-      }
-
       .memo-title-text {
+        flex-grow: 1;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
       }
-
-      .memo-actions {
-        display: flex;
-        align-items: center;
-        flex-shrink: 0;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-      }
-      .memo-item:hover .memo-actions {
-        opacity: 1;
-      }
-
-      .action-btn {
+      .memo-actions button {
+        margin-left: 4px;
         background: none;
         border: none;
-        color: var(--text-secondary);
         cursor: pointer;
-        font-size: 16px;
-        padding: 4px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        color: #a0a0a5;
       }
-      .action-btn:hover {
-        color: var(--text-primary);
-      }
-      .delete-btn:hover {
-        color: var(--danger-color);
+      .memo-actions button:hover {
+        color: #fff;
       }
 
-      #memo-list .empty-message {
-        color: var(--text-secondary);
-        text-align: center;
-        padding: 20px;
-      }
-
-      /* =======================
-         메인 콘텐츠 & 에디터
-         ======================= */
+      /* Main */
       .main-content {
         flex-grow: 1;
         display: flex;
         flex-direction: column;
-        background-color: var(--background-secondary);
+        padding: 12px;
       }
-
       .editor-container {
-        padding: 24px;
         display: flex;
         flex-direction: column;
         height: 100%;
       }
-
-      .editor-header {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        margin-bottom: 16px;
-      }
-
-      #delete-memo-btn {
-        background: none;
-        border: none;
-        color: var(--danger-color);
-        cursor: pointer;
-        font-size: 24px;
-        padding: 4px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      #delete-memo-btn:hover {
-        background-color: var(--danger-color-hover);
-        color: white;
-      }
-
       #memo-title {
-        font-size: 28px;
-        font-weight: 700;
-        padding: 8px;
+        font-size: 20px;
+        padding: 12px;
+        margin-bottom: 12px;
         border: none;
-        border-radius: 8px;
-        margin-bottom: 16px;
-        width: 100%;
-        background-color: transparent;
-        color: var(--text-primary);
+        border-radius: 6px;
+        background: #3a3a3a;
+        color: #fff;
       }
-      #memo-title:focus {
-        outline: none;
-        background-color: var(--background-primary);
-      }
-
       #memo-content {
         flex-grow: 1;
-        font-size: 16px;
-        line-height: 1.7;
-        padding: 16px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        resize: none;
         width: 100%;
-        background-color: var(--background-primary);
-        color: var(--text-primary);
-      }
-      #memo-content:focus {
-        outline: none;
-        border-color: var(--accent-color);
-      }
-
-      .placeholder {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
-        color: var(--text-secondary);
-        font-size: 18px;
-        gap: 8px;
-      }
-      .placeholder-icon {
-        font-size: 48px;
+        padding: 12px;
+        font-size: 16px;
+        line-height: 1.5;
+        border: none;
+        border-radius: 6px;
+        background: #3a3a3a;
+        color: #fff;
+        resize: none;
+        overflow-y: auto;
       }
 
-      /* =======================
-         Toast Notification
-         ======================= */
+      /* Toast */
       #toast-container {
         position: fixed;
         top: 20px;
         right: 20px;
-        z-index: 1000;
         display: flex;
         flex-direction: column;
         gap: 10px;
+        z-index: 1000;
       }
       .toast {
-        background-color: var(--background-tertiary);
-        color: var(--text-primary);
-        padding: 12px 16px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        opacity: 0;
-        transform: translateX(100%);
-        animation: slideIn 0.5s forwards, fadeOut 0.5s 2.5s forwards;
-      }
-      .toast.success {
-        border-left: 4px solid #34c759;
-      }
-      .toast.error {
-        border-left: 4px solid var(--danger-color);
-      }
-      @keyframes slideIn {
-        to {
-          opacity: 1;
-          transform: translateX(0);
-        }
-      }
-      @keyframes fadeOut {
-        to {
-          opacity: 0;
-          transform: translateX(100%);
-        }
+        background: #3a3a3a;
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       }
 
-      /* =======================
-         Modal
-         ======================= */
+      /* Modal */
       .modal-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.5);
         display: flex;
         justify-content: center;
         align-items: center;
+        display: none;
         z-index: 2000;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s, visibility 0.3s;
-      }
-      .modal-overlay.visible {
-        opacity: 1;
-        visibility: visible;
       }
       .modal-content {
-        background-color: var(--background-primary);
+        background: #3a3a3a;
         padding: 24px;
-        border-radius: 12px;
+        border-radius: 8px;
         width: 90%;
         max-width: 400px;
         text-align: center;
-        transform: scale(0.9);
-        transition: transform 0.3s;
-      }
-      .modal-overlay.visible .modal-content {
-        transform: scale(1);
-      }
-      .modal-content h3 {
-        margin-top: 0;
-        margin-bottom: 8px;
-        color: var(--text-primary);
-      }
-      .modal-content p {
-        margin-bottom: 24px;
-        color: var(--text-secondary);
       }
       .modal-buttons {
         display: flex;
@@ -402,31 +164,24 @@
       .modal-buttons button {
         flex: 1;
         padding: 10px;
-        border-radius: 8px;
+        border-radius: 6px;
         border: none;
-        font-size: 16px;
         cursor: pointer;
       }
       #modal-confirm-btn {
-        background-color: var(--danger-color);
-        color: white;
-      }
-      #modal-confirm-btn:hover {
-        background-color: var(--danger-color-hover);
+        background: #ff453a;
+        color: #fff;
       }
       #modal-cancel-btn {
-        background-color: var(--background-tertiary);
-        color: var(--text-primary);
-      }
-      #modal-cancel-btn:hover {
-        background-color: var(--border-color);
+        background: #555;
+        color: #fff;
       }
     </style>
   </head>
   <body>
-    <!-- Toast & Modal -->
     <div id="toast-container"></div>
-    <div id="modal-overlay" class="modal-overlay">
+
+    <div class="modal-overlay" id="modal-overlay">
       <div class="modal-content">
         <h3 id="modal-title"></h3>
         <p id="modal-message"></p>
@@ -437,402 +192,329 @@
       </div>
     </div>
 
-    <!-- Layout -->
     <div class="container">
       <aside class="sidebar">
         <div class="sidebar-header">
-          <div class="header-top-row">
-            <h1 class="app-title">Memo</h1>
-          </div>
+          <h1>Memo</h1>
           <button id="add-memo-btn">➕ 새 루트 메모</button>
-          <div class="file-io-buttons">
-            <button id="open-file-btn" class="io-btn">📂 열기</button>
-            <button id="save-btn" class="io-btn">💾 저장</button>
-          </div>
+          <button id="open-file-btn" class="io-btn">📂 열기</button>
+          <button id="save-btn" class="io-btn">💾 저장</button>
         </div>
         <ul id="memo-list"></ul>
       </aside>
-      <main class="main-content" id="main-content"></main>
+      <main class="main-content" id="main-content">
+        <div class="placeholder">
+          <span>메모를 선택하거나 새로 만드세요.</span>
+        </div>
+      </main>
     </div>
 
-    <!-- =======================
-         JavaScript
-         ======================= -->
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        /* =======================
-           상수 & DOM 요소
-           ======================= */
-        const CONSTANTS = {
-          STORAGE_KEY: "vanilla-memos",
-          DEBOUNCE_DELAY: 500,
+        const STORAGE_KEY = "vanilla-memos",
+          DEBOUNCE_DELAY = 500;
+        let memos = [],
+          currentMemoId = null,
+          fileHandle = null;
+
+        const memoList = document.getElementById("memo-list"),
+          mainContent = document.getElementById("main-content");
+
+        const createElement = (tag, className, innerHTML, attrs = {}) => {
+          const el = document.createElement(tag);
+          if (className) el.className = className;
+          if (innerHTML) el.innerHTML = innerHTML;
+          Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+          return el;
         };
-
-        const memoList = document.getElementById("memo-list");
-        const addMemoBtn = document.getElementById("add-memo-btn");
-        const mainContent = document.getElementById("main-content");
-        const saveBtn = document.getElementById("save-btn");
-        const openFileBtn = document.getElementById("open-file-btn");
-
-        let memos = [];
-        let currentMemoId = null;
-        let fileHandle = null;
-
-        /* =======================
-           유틸리티
-           ======================= */
-        const encodeToBase64 = (jsonString) => btoa(unescape(encodeURIComponent(jsonString)));
-        const decodeFromBase64 = (base64String) => decodeURIComponent(escape(atob(base64String)));
-
-        const createElement = (tag, className, innerHTML, attributes = {}) => {
-          const element = document.createElement(tag);
-          if (className) element.className = className;
-          if (innerHTML) element.innerHTML = innerHTML;
-          Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
-          return element;
-        };
-
-        function findMemoById(nodes, id) {
-          for (const node of nodes) {
-            if (node.id === id) return node;
-            if (node.children) {
-              const found = findMemoById(node.children, id);
-              if (found) return found;
+        const findMemoById = (nodes, id) => {
+          for (const n of nodes) {
+            if (n.id === id) return n;
+            if (n.children) {
+              const f = findMemoById(n.children, id);
+              if (f) return f;
             }
           }
           return null;
-        }
-
-        function traverseAndMigrate(nodes) {
-          return nodes.map(node => ({
-            ...node,
-            isExpanded: node.isExpanded !== undefined ? node.isExpanded : true,
-            children: node.children ? traverseAndMigrate(node.children) : [],
+        };
+        const traverseAndMigrate = (nodes) =>
+          nodes.map((n) => ({
+            ...n,
+            isExpanded: n.isExpanded !== undefined ? n.isExpanded : true,
+            children: n.children ? traverseAndMigrate(n.children) : [],
           }));
-        }
-
-        function removeMemoById(nodes, id) {
-          const index = nodes.findIndex(node => node.id === id);
-          if (index > -1) {
-            nodes.splice(index, 1);
+        const removeMemoById = (nodes, id) => {
+          const i = nodes.findIndex((n) => n.id === id);
+          if (i > -1) {
+            nodes.splice(i, 1);
             return true;
           }
-          for (const node of nodes) {
-            if (node.children && removeMemoById(node.children, id)) return true;
+          for (const n of nodes) {
+            if (n.children && removeMemoById(n.children, id)) return true;
           }
           return false;
-        }
-
-        /* =======================
-           UI 피드백
-           ======================= */
-        const showToast = (message, type = "success") => {
-          const toastContainer = document.getElementById("toast-container");
-          const icon = type === "success" ? "✅" : "❌";
-          const toast = createElement("div", `toast ${type}`, `${icon} ${message}`);
-          toastContainer.appendChild(toast);
-          setTimeout(() => toast.remove(), 3000);
         };
-
-        const showModal = (title, message) => {
-          return new Promise(resolve => {
-            const modalOverlay = document.getElementById("modal-overlay");
-            document.getElementById("modal-title").textContent = title;
-            document.getElementById("modal-message").textContent = message;
-            modalOverlay.classList.add("visible");
-
-            const confirmBtn = document.getElementById("modal-confirm-btn");
-            const cancelBtn = document.getElementById("modal-cancel-btn");
-
-            const close = value => {
-              modalOverlay.classList.remove("visible");
-              confirmBtn.replaceWith(confirmBtn.cloneNode(true));
-              cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-              resolve(value);
-            };
-
-            confirmBtn.addEventListener("click", () => close(true), { once: true });
-            cancelBtn.addEventListener("click", () => close(false), { once: true });
-          });
-        };
-
-        /* =======================
-           데이터 관리
-           ======================= */
+        const saveMemos = () =>
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
         const loadMemos = () => {
-          const memosJSON = localStorage.getItem(CONSTANTS.STORAGE_KEY);
-          const parsedMemos = memosJSON ? JSON.parse(memosJSON) : [];
-          memos = traverseAndMigrate(parsedMemos);
+          const d = localStorage.getItem(STORAGE_KEY);
+          memos = d ? traverseAndMigrate(JSON.parse(d)) : [];
         };
-
-        const saveMemos = () => {
-          localStorage.setItem(CONSTANTS.STORAGE_KEY, JSON.stringify(memos));
+        const showToast = (msg, type = "success") => {
+          const t = createElement("div", "toast", msg);
+          document.getElementById("toast-container").appendChild(t);
+          setTimeout(() => t.remove(), 3000);
         };
+        const showModal = (title, msg) =>
+          new Promise((res) => {
+            const overlay = document.getElementById("modal-overlay");
+            overlay.style.display = "flex";
+            document.getElementById("modal-title").textContent = title;
+            document.getElementById("modal-message").textContent = msg;
+            const c = document.getElementById("modal-confirm-btn"),
+              x = document.getElementById("modal-cancel-btn");
+            const close = (v) => {
+              overlay.style.display = "none";
+              c.replaceWith(c.cloneNode(true));
+              x.replaceWith(x.cloneNode(true));
+              res(v);
+            };
+            c.addEventListener("click", () => close(true), { once: true });
+            x.addEventListener("click", () => close(false), { once: true });
+          });
+        const encodeBase64 = (s) => btoa(unescape(encodeURIComponent(s)));
+        const decodeBase64 = (s) => decodeURIComponent(escape(atob(s)));
 
-        /* =======================
-           UI 렌더링
-           ======================= */
         const renderMemoList = () => {
           memoList.innerHTML = "";
           if (memos.length === 0) {
-            const emptyLi = createElement("li", "empty-message", "메모가 없습니다.");
-            memoList.appendChild(emptyLi);
+            memoList.appendChild(
+              createElement("li", "memo-item", "메모가 없습니다.")
+            );
             return;
           }
-          memos.forEach(memo => renderMemoNode(memo, 0, memoList));
+          memos.forEach((m) => renderNode(m, 0, memoList));
         };
 
-        const renderMemoNode = (memo, depth, container) => {
+        const renderNode = (memo, depth, container) => {
           const li = createElement("div", "memo-item-container");
-          const itemDiv = createElement("div", "memo-item");
-          itemDiv.style.paddingLeft = `${16 + depth * 20}px`;
-          if (memo.id === currentMemoId) itemDiv.classList.add("selected");
+          const item = createElement("div", "memo-item");
+          item.style.paddingLeft = `${16 + depth * 20}px`;
+          if (memo.id === currentMemoId) item.classList.add("selected");
 
-          const contentDiv = createElement("div", "memo-item-content");
-
-          const toggleBtn = createElement("button", "toggle-btn", memo.isExpanded ? "▼" : "▶");
-          toggleBtn.classList.toggle("hidden", memo.children.length === 0);
-          toggleBtn.addEventListener("click", e => {
-            e.stopPropagation();
-            toggleExpand(memo.id);
+          const titleSpan = createElement(
+            "span",
+            "memo-title-text",
+            memo.title
+          );
+          titleSpan.addEventListener("click", () => {
+            currentMemoId = memo.id;
+            renderMemoList();
+            renderEditor();
           });
 
-          const titleSpan = createElement("span", "memo-title-text", memo.title);
-          titleSpan.addEventListener("click", e => {
-            e.stopPropagation();
-            selectMemo(memo.id);
-          });
-
-          contentDiv.append(toggleBtn, titleSpan);
-
-          const actionsDiv = createElement("div", "memo-actions");
-          const addChildBtn = createElement("button", "action-btn add-child-btn", "➕", { title: "자식 메모 추가" });
-          addChildBtn.addEventListener("click", e => {
+          const actions = createElement("div", "memo-actions");
+          const addChild = createElement("button", null, "➕");
+          addChild.title = "자식 추가";
+          addChild.addEventListener("click", (e) => {
             e.stopPropagation();
             addChildMemo(memo.id);
           });
-
-          const deleteBtn = createElement("button", "action-btn delete-btn", "❌", { title: "메모 삭제" });
-          deleteBtn.addEventListener("click", e => {
+          const del = createElement("button", null, "❌");
+          del.title = "삭제";
+          del.addEventListener("click", (e) => {
             e.stopPropagation();
             deleteMemo(memo.id);
           });
+          actions.append(addChild, del);
 
-          actionsDiv.append(addChildBtn, deleteBtn);
-          itemDiv.append(contentDiv, actionsDiv);
-          li.appendChild(itemDiv);
+          const toggle = createElement(
+            "button",
+            null,
+            memo.isExpanded ? "▼" : "▶"
+          );
+          toggle.title = "접기/펼치기";
+          toggle.style.marginRight = "4px";
+          toggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            memo.isExpanded = !memo.isExpanded;
+            saveMemos();
+            renderMemoList();
+          });
+          toggle.style.visibility =
+            memo.children.length > 0 ? "visible" : "hidden";
+
+          item.append(toggle, titleSpan, actions);
+          li.appendChild(item);
           container.appendChild(li);
 
-          if (memo.isExpanded && memo.children.length > 0) {
-            const ul = createElement("ul", "memo-child-list");
-            li.appendChild(ul);
-            memo.children.forEach(child => renderMemoNode(child, depth + 1, ul));
-          }
+          if (memo.isExpanded && memo.children.length > 0)
+            memo.children.forEach((c) => renderNode(c, depth + 1, container));
         };
 
         const renderEditor = () => {
           const memo = findMemoById(memos, currentMemoId);
+          mainContent.innerHTML = "";
           if (!memo) {
-            mainContent.innerHTML = '<div class="placeholder"><span class="placeholder-icon">📝</span><span>메모를 선택하거나 새로 만드세요.</span></div>';
+            mainContent.innerHTML =
+              '<div class="placeholder"><span>메모를 선택하거나 새로 만드세요.</span></div>';
             return;
           }
+          const title = createElement("input", null, null, {
+            id: "memo-title",
+            type: "text",
+            value: memo.title,
+          });
+          const content = createElement("textarea", null, memo.content, {
+            id: "memo-content",
+          });
+          const container = createElement("div", "editor-container");
+          container.append(title, content);
+          mainContent.appendChild(container);
 
-          mainContent.innerHTML = "";
-          const editorContainer = createElement("div", "editor-container");
-          const editorHeader = createElement("div", "editor-header");
-          const deleteBtn = createElement("button", null, "🗑️", { id: "delete-memo-btn", title: "삭제" });
-          const titleInput = createElement("input", null, null, { type: "text", id: "memo-title", value: memo.title, placeholder: "제목" });
-          const contentTextarea = createElement("textarea", null, memo.content, { id: "memo-content", placeholder: "내용을 입력하세요..." });
-
-          editorHeader.appendChild(deleteBtn);
-          editorContainer.append(editorHeader, titleInput, contentTextarea);
-          mainContent.appendChild(editorContainer);
-
-          let debounceTimer;
-          const autoSave = () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-              const currentMemo = findMemoById(memos, currentMemoId);
-              if (currentMemo) {
-                currentMemo.title = titleInput.value;
-                currentMemo.content = contentTextarea.value;
+          let debounce;
+          const autosave = () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+              const m = findMemoById(memos, currentMemoId);
+              if (m) {
+                m.title = title.value;
+                m.content = content.value;
                 saveMemos();
                 renderMemoList();
               }
-            }, CONSTANTS.DEBOUNCE_DELAY);
+            }, DEBOUNCE_DELAY);
           };
-
-          titleInput.addEventListener("input", autoSave);
-          contentTextarea.addEventListener("input", autoSave);
-          deleteBtn.addEventListener("click", () => deleteMemo(currentMemoId));
+          title.addEventListener("input", autosave);
+          content.addEventListener("input", autosave);
         };
 
-        /* =======================
-           핵심 이벤트 핸들러
-           ======================= */
-        const selectMemo = id => {
-          currentMemoId = id;
-          renderMemoList();
-          renderEditor();
-        };
+        document
+          .getElementById("add-memo-btn")
+          .addEventListener("click", () => {
+            const m = {
+              id: Date.now().toString(),
+              title: "새 루트 메모",
+              content: "",
+              children: [],
+              isExpanded: true,
+            };
+            memos.unshift(m);
+            currentMemoId = m.id;
+            saveMemos();
+            renderMemoList();
+            renderEditor();
+            document.getElementById("memo-title").focus();
+            document.getElementById("memo-title").select();
+          });
 
-        const addChildMemo = parentId => {
-          const parentMemo = findMemoById(memos, parentId);
-          if (!parentMemo) return;
-
-          const newMemo = {
+        const addChildMemo = (parentId) => {
+          const parent = findMemoById(memos, parentId);
+          if (!parent) return;
+          const m = {
             id: Date.now().toString(),
             title: "새 자식 메모",
             content: "",
             children: [],
             isExpanded: true,
           };
-          parentMemo.children.unshift(newMemo);
-          parentMemo.isExpanded = true;
+          parent.children.unshift(m);
+          parent.isExpanded = true;
           saveMemos();
-          currentMemoId = newMemo.id;
+          currentMemoId = m.id;
           renderMemoList();
           renderEditor();
           document.getElementById("memo-title").focus();
           document.getElementById("memo-title").select();
         };
 
-        const toggleExpand = memoId => {
-          const memo = findMemoById(memos, memoId);
-          if (memo) {
-            memo.isExpanded = !memo.isExpanded;
-            saveMemos();
-            renderMemoList();
-          }
-        };
-
-        addMemoBtn.addEventListener("click", () => {
-          const newMemo = {
-            id: Date.now().toString(),
-            title: "새 루트 메모",
-            content: "",
-            children: [],
-            isExpanded: true,
-          };
-          memos.unshift(newMemo);
-          saveMemos();
-          currentMemoId = newMemo.id;
-          renderMemoList();
-          renderEditor();
-          document.getElementById("memo-title").focus();
-          document.getElementById("memo-title").select();
-        });
-
-        async function deleteMemo(idToDelete) {
-          if (!idToDelete) return;
-          const confirmed = await showModal("메모 삭제", "정말로 이 메모와 모든 하위 메모를 삭제하시겠습니까?");
+        const deleteMemo = async (id) => {
+          if (!id) return;
+          const confirmed = await showModal(
+            "메모 삭제",
+            "정말 삭제하시겠습니까?"
+          );
           if (confirmed) {
-            if (removeMemoById(memos, idToDelete)) {
+            if (removeMemoById(memos, id)) {
               saveMemos();
-              if (currentMemoId === idToDelete) currentMemoId = null;
+              if (currentMemoId === id) currentMemoId = null;
               renderMemoList();
               renderEditor();
-              showToast("메모가 삭제되었습니다.");
+              showToast("삭제 완료");
             }
           }
-        }
+        };
 
-        /* =======================
-           파일 입출력
-           ======================= */
-        async function saveFile() {
+        const saveFile = async () => {
           if (memos.length === 0) {
-            showToast("저장할 메모가 없습니다.", "error");
+            showToast("저장할 메모 없음", "error");
             return;
           }
-
-          const memosJSON = JSON.stringify(memos);
-          const base64Data = encodeToBase64(memosJSON);
-
-          if (fileHandle) {
-            const confirmed = await showModal("파일 저장", `'${fileHandle.name}' 파일에 변경 내용을 덮어쓰시겠습니까?`);
-            if (!confirmed) return;
-            try {
-              const writable = await fileHandle.createWritable({ keepExistingData: false });
-              await writable.write(base64Data);
-              await writable.close();
-              showToast("파일에 성공적으로 저장되었습니다.");
-            } catch (err) {
-              if (err.name !== "AbortError") {
-                console.error("파일 덮어쓰기 오류:", err);
-                showToast("파일 저장에 실패했습니다.", "error");
-              }
-            }
-          } else {
-            try {
-              const handle = await window.showSaveFilePicker({
-                suggestedName: "memos.json",
-                types: [{ description: "JSON Files", accept: { "application/json": [".json"] } }],
-              });
-              fileHandle = handle;
-              const writable = await fileHandle.createWritable({ keepExistingData: false });
-              await writable.write(base64Data);
-              await writable.close();
-              showToast("파일이 성공적으로 저장되었습니다.");
-            } catch (err) {
-              if (err.name !== "AbortError") {
-                console.error("파일 저장 오류:", err);
-                showToast("파일 저장에 실패했습니다.", "error");
-              }
-            }
-          }
-        }
-
-        async function openFile() {
-          const confirmed = await showModal("파일 열기", "파일을 열면 현재 메모가 모두 교체됩니다. 계속하시겠습니까?");
-          if (!confirmed) return;
-
+          const data = encodeBase64(JSON.stringify(memos));
           try {
-            const [handle] = await window.showOpenFilePicker({ types: [{ description: "JSON Files", accept: { "application/json": [".json"] } }] });
+            if (fileHandle) {
+              const confirmed = await showModal(
+                "파일 저장",
+                `'${fileHandle.name}' 덮어쓰기?`
+              );
+              if (!confirmed) return;
+              const w = await fileHandle.createWritable();
+              await w.write(data);
+              await w.close();
+            } else {
+              const h = await window.showSaveFilePicker({
+                suggestedName: "memos.json",
+              });
+              fileHandle = h;
+              const w = await fileHandle.createWritable();
+              await w.write(data);
+              await w.close();
+            }
+            showToast("파일 저장 완료");
+          } catch (e) {
+            if (e.name !== "AbortError") showToast("파일 저장 실패", "error");
+          }
+        };
+
+        const openFile = async () => {
+          const confirmed = await showModal(
+            "파일 열기",
+            "현재 메모 모두 교체됩니다. 계속?"
+          );
+          if (!confirmed) return;
+          try {
+            const [handle] = await window.showOpenFilePicker({
+              types: [
+                {
+                  description: "JSON Files",
+                  accept: { "application/json": [".json"] },
+                },
+              ],
+            });
             fileHandle = handle;
-            const file = await fileHandle.getFile();
+            const file = await handle.getFile();
             const content = await file.text();
-            try {
-              const memosJSON = decodeFromBase64(content);
-              const importedMemos = JSON.parse(memosJSON);
-              memos = traverseAndMigrate(importedMemos);
-              currentMemoId = memos.length > 0 ? memos[0].id : null;
-              saveMemos();
-              renderMemoList();
-              renderEditor();
-              showToast("메모를 성공적으로 불러왔습니다.");
-            } catch (error) {
-              showToast("잘못된 파일 형식입니다.", "error");
-              console.error("파일 파싱 오류:", error);
-            }
-          } catch (err) {
-            if (err.name !== "AbortError") {
-              console.error("파일 열기 오류:", err);
-              showToast("파일을 여는 데 실패했습니다.", "error");
-            }
+            memos = traverseAndMigrate(JSON.parse(decodeBase64(content)));
+            currentMemoId = memos.length > 0 ? memos[0].id : null;
+            saveMemos();
+            renderMemoList();
+            renderEditor();
+            showToast("메모 불러오기 완료");
+          } catch (e) {
+            if (e.name !== "AbortError") showToast("파일 열기 실패", "error");
           }
-        }
+        };
 
-        /* =======================
-           초기화
-           ======================= */
-        function init() {
-          if (!("showOpenFilePicker" in window)) {
-            const fileIOButtons = document.querySelector(".file-io-buttons");
-            if (fileIOButtons) {
-              fileIOButtons.innerHTML = '<p style="font-size: 12px; color: var(--text-secondary);">파일 입출력 미지원 브라우저</p>';
-            }
-          }
-          loadMemos();
-          if (memos.length > 0 && !findMemoById(memos, currentMemoId)) currentMemoId = memos[0].id;
-          renderMemoList();
-          renderEditor();
-        }
+        document.getElementById("save-btn").addEventListener("click", saveFile);
+        document
+          .getElementById("open-file-btn")
+          .addEventListener("click", openFile);
 
-        openFileBtn.addEventListener("click", openFile);
-        saveBtn.addEventListener("click", saveFile);
-
-        init();
+        loadMemos();
+        if (memos.length > 0 && !findMemoById(memos, currentMemoId))
+          currentMemoId = memos[0].id;
+        renderMemoList();
+        renderEditor();
       });
     </script>
   </body>

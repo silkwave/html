@@ -24,3 +24,4 @@ wsl2
 ### 파일명 (Filename)
 
 memo.html
+최소 CSS 유지
