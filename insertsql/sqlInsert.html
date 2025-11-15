@@ -2,100 +2,103 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
+    <!-- 문자 인코딩을 UTF-8로 설정 -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 반응형 웹 설정을 위한 뷰포트 메타 태그 -->
     <title>INSERT 생성기</title>
+    <!-- 웹 페이지의 제목 설정 -->
 
-    <!-- 기본 스타일 정의 -->
     <style>
+      /* 기본 스타일 정의 */
       body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        background: #f5f5f5;
+        font-family: Arial, sans-serif; /* 폰트 설정 */
+        margin: 20px; /* 바깥 여백 설정 */
+        background: #f5f5f5; /* 배경색 설정 */
       }
 
       /* 컨테이너 중앙 정렬 및 최대 너비 설정 */
       .container {
-        max-width: 1200px;
-        margin: auto;
+        max-width: 1200px; /* 최대 너비 설정 */
+        margin: auto; /* 가운데 정렬 */
       }
 
       /* 라벨 스타일 */
       label {
-        font-weight: bold;
-        margin-top: 12px;
-        display: block;
+        font-weight: bold; /* 글자 굵기 */
+        margin-top: 12px; /* 위쪽 여백 */
+        display: block; /* 블록 레벨 요소로 표시 */
       }
 
       /* 입력 필드, 텍스트 영역, 버튼 기본 스타일 */
       input,
       textarea,
       button {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 10px;
-        margin-top: 5px;
-        font-size: 16px;
+        width: 100%; /* 너비 100% */
+        box-sizing: border-box; /* 박스 모델 설정 */
+        padding: 10px; /* 안쪽 여백 */
+        margin-top: 5px; /* 위쪽 여백 */
+        font-size: 16px; /* 폰트 크기 */
       }
 
       /* 입력 텍스트 영역 스타일 */
       textarea {
-        min-height: 300px; /* 🔥 더 커진 입력창 */
-        resize: vertical;
+        min-height: 300px; /* 최소 높이 */ /* 🔥 더 커진 입력창 */
+        resize: vertical; /* 세로 크기 조절 가능 */
       }
 
       /* 출력 텍스트 영역 스타일 */
       #output {
-        min-height: 350px; /* 🔥 더 커진 출력창 */
-        background: #222;
-        color: #0f0;
-        font-family: Consolas, monospace;
-        border-radius: 4px;
-        padding: 15px;
+        min-height: 350px; /* 최소 높이 */ /* 🔥 더 커진 출력창 */
+        background: #222; /* 배경색 */
+        color: #0f0; /* 글자색 */
+        font-family: Consolas, monospace; /* 폰트 */
+        border-radius: 4px; /* 테두리 둥글게 */
+        padding: 15px; /* 안쪽 여백 */
       }
 
       /* 버튼 기본 스타일 */
       button {
-        margin-top: 15px;
-        font-size: 18px;
-        padding: 12px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
+        margin-top: 15px; /* 위쪽 여백 */
+        font-size: 18px; /* 폰트 크기 */
+        padding: 12px; /* 안쪽 여백 */
+        border: none; /* 테두리 없음 */
+        border-radius: 6px; /* 테두리 둥글게 */
+        cursor: pointer; /* 마우스 오버 시 커서 변경 */
       }
 
       /* 기본 버튼 (생성) 스타일 */
       .btn-primary {
-        background: #0066ff;
-        color: white;
+        background: #0066ff; /* 배경색 */
+        color: white; /* 글자색 */
       }
 
       /* 보조 버튼 (복사) 스타일 */
       .btn-secondary {
-        background: #555;
-        color: white;
+        background: #555; /* 배경색 */
+        color: white; /* 글자색 */
       }
 
       /* 상태 메시지 영역 스타일 */
       #status-message {
-        margin-top: 15px;
-        padding: 12px;
-        border-radius: 4px;
-        font-weight: bold;
-        display: none;
+        margin-top: 15px; /* 위쪽 여백 */
+        padding: 12px; /* 안쪽 여백 */
+        border-radius: 4px; /* 테두리 둥글게 */
+        font-weight: bold; /* 글자 굵기 */
+        display: none; /* 기본적으로 숨김 */
       }
 
       /* 성공 상태 메시지 스타일 */
       #status-message.success {
-        background-color: #d4edda;
-        color: #155724;
-        display: block;
+        background-color: #d4edda; /* 배경색 */
+        color: #155724; /* 글자색 */
+        display: block; /* 표시 */
       }
 
       /* 에러 상태 메시지 스타일 */
       #status-message.error {
-        background-color: #f8d7da;
-        color: #721c24;
-        display: block;
+        background-color: #f8d7da; /* 배경색 */
+        color: #721c24; /* 글자색 */
+        display: block; /* 표시 */
       }
     </style>
   </head>
@@ -119,11 +122,11 @@
       >
 
       <!-- INSERT 생성 버튼 -->
-      <button class="btn-primary" onclick="generateInsert()">
+      <button class="btn-primary" id="generate-btn">
         INSERT 생성
       </button>
       <!-- SQL 복사 버튼 -->
-      <button class="btn-secondary" onclick="copySql()">복사</button>
+      <button class="btn-secondary" id="copy-btn">복사</button>
 
       <!-- 출력 결과 섹션 -->
       <label>출력 결과</label>
@@ -134,163 +137,148 @@
     </div>
 
     <script>
-      /* ==========================
-   날짜 자동 감지 (리팩토링)
-   ========================== */
-      // 입력된 값이 날짜 형식인지 감지하고 TO_DATE 형식으로 변환합니다.
-      function detectDate(value) {
-        const dateFormats = [
-          {
-            regex: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/,
-            format: "YYYY-MM-DD HH24:MI:SS",
-          },
-          {
-            regex: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
-            format: "YYYY-MM-DD HH24:MI",
-          },
-          {
-            regex: /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/,
-            format: "YY/MM/DD HH24:MI:SS",
-          },
-          {
-            regex: /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/,
-            format: "YY/MM/DD HH24:MI",
-          },
-          { regex: /^\d{4}-\d{2}-\d{2}$/, format: "YYYY-MM-DD" },
-          { regex: /^\d{2}\/\d{2}\/\d{2}$/, format: "YY/MM/DD" },
-          // 다른 날짜 형식을 추가하려면 여기에 객체를 추가하세요.
-        ];
+      (function () {
+        // DOM 요소 ID를 상수로 관리하여 유지보수성을 높입니다.
+        const UI = {
+          TABLE_NAME_INPUT: "tableNameInput",
+          INPUT_DATA: "inputData",
+          OUTPUT: "output",
+          STATUS_MESSAGE: "status-message",
+          GENERATE_BTN: "generate-btn",
+          COPY_BTN: "copy-btn",
+        };
 
-        for (const df of dateFormats) {
-          if (df.regex.test(value)) {
-            return `TO_DATE('${value}', '${df.format}')`;
+        // 애플리케이션 상태를 관리하는 객체
+        const state = {
+          elements: {},
+        };
+
+        /* ==========================
+         * 날짜 형식 감지 및 변환
+         * ========================== */
+        function detectDate(value) {
+          const dateFormats = [
+            { regex: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, format: "YYYY-MM-DD HH24:MI:SS" },
+            { regex: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/, format: "YYYY-MM-DD HH24:MI" },
+            { regex: /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/, format: "YY/MM/DD HH24:MI:SS" },
+            { regex: /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/, format: "YY/MM/DD HH24:MI" },
+            { regex: /^\d{4}-\d{2}-\d{2}$/, format: "YYYY-MM-DD" },
+            { regex: /^\d{2}\/\d{2}\/\d{2}$/, format: "YY/MM/DD" },
+          ];
+
+          for (const df of dateFormats) {
+            if (df.regex.test(value)) {
+              return `TO_DATE('${value}', '${df.format}')`;
+            }
+          }
+          return null;
+        }
+
+        /* ==========================
+         * SQL 값 포맷팅
+         * ========================== */
+        function formatValue(raw) {
+          if (!raw || raw.trim() === "") {
+            return "NULL";
+          }
+
+          const value = raw.trim().replace(/^"|"$/g, "");
+          const detectedDate = detectDate(value);
+          if (detectedDate) {
+            return detectedDate;
+          }
+
+          const num = value.replace(/,/g, "");
+          if (!isNaN(num) && num !== "") {
+            // 요구사항: 한 자리 숫자만 숫자 타입으로, 나머지는 문자열로 처리합니다.
+            // 이는 숫자 형식의 ID와 같은 값이 문자열로 유지되도록 보장합니다.
+            return num.length === 1 ? num : `'${value.replace(/'/g, "''")}'`;
+          }
+
+          return `'${value.replace(/'/g, "''")}'`;
+        }
+
+        /* ==========================
+         * 핵심 SQL 생성 로직
+         * ========================== */
+        function parseAndGenerateSql(tableName, data) {
+          if (!tableName) {
+            return { error: "테이블명을 입력하세요." };
+          }
+
+          const lines = data.split("\n").map((v) => v.trim()).filter((v) => v);
+
+          if (lines.length < 2) {
+            return { error: "컬럼과 최소 한 줄의 데이터가 필요합니다." };
+          }
+
+          const columns = (lines[0].match(/"[^"]*"|\S+/g) || []).map((c) => c.replace(/"/g, ""));
+          const rows = lines.slice(1);
+
+          const sqlList = rows.map((row) => {
+            const parts = row.match(/"[^"]*"|\S+/g) || [];
+            const padded = [...parts, ...Array(Math.max(0, columns.length - parts.length)).fill("")];
+            const formatted = padded.map(formatValue).join(", ");
+            return `INSERT INTO ${tableName} (${columns.join(", ")})\nVALUES (${formatted});`;
+          });
+
+          return { sql: sqlList.join("\n\n") };
+        }
+
+        /* ==========================
+         * UI 상태 및 메시지 표시
+         * ========================== */
+        function displayStatus(message, isError = false) {
+          const { status } = state.elements;
+          status.textContent = message;
+          status.className = isError ? "error" : "success";
+        }
+
+        /* ==========================
+         * 이벤트 핸들러
+         * ========================== */
+        function handleGenerateClick() {
+          const { tableNameInput, inputData, output } = state.elements;
+          const { sql, error } = parseAndGenerateSql(tableNameInput.value, inputData.value);
+
+          if (error) {
+            displayStatus(error, true);
+            output.value = "";
+          } else {
+            output.value = sql;
+            displayStatus("INSERT 문 생성 완료!");
           }
         }
 
-        // 일치하는 날짜 형식이 없으면 null 반환
-        return null;
-      }
+        function handleCopyClick() {
+          const { output } = state.elements;
+          if (!output.value.trim()) return;
 
-      /* ==========================
-   값 포맷팅 (리팩토링)
-   ========================== */
-      // 입력된 값을 SQL INSERT 문에 맞게 포맷팅합니다.
-      function formatValue(raw) {
-        // 값이 없거나 빈 문자열이면 NULL 반환
-        if (!raw || raw.trim() === "") {
-          return "NULL";
+          navigator.clipboard.writeText(output.value).then(() => {
+            displayStatus("복사 완료!");
+          });
         }
 
-        let value = raw.trim().replace(/^"|"$/g, ""); // 따옴표 제거
+        /* ==========================
+         * 애플리케이션 초기화
+         * ========================== */
+        function init() {
+          // 주요 DOM 요소를 한 번만 조회하여 상태에 저장합니다.
+          state.elements.tableNameInput = document.getElementById(UI.TABLE_NAME_INPUT);
+          state.elements.inputData = document.getElementById(UI.INPUT_DATA);
+          state.elements.output = document.getElementById(UI.OUTPUT);
+          state.elements.status = document.getElementById(UI.STATUS_MESSAGE);
+          state.elements.generateBtn = document.getElementById(UI.GENERATE_BTN);
+          state.elements.copyBtn = document.getElementById(UI.COPY_BTN);
 
-        // 날짜 형식 우선 감지 및 변환
-        const detectedDate = detectDate(value);
-        if (detectedDate) {
-          return detectedDate;
+          // 이벤트 리스너를 등록합니다.
+          state.elements.generateBtn.addEventListener("click", handleGenerateClick);
+          state.elements.copyBtn.addEventListener("click", handleCopyClick);
         }
 
-        // 숫자 처리 로직
-        const num = value.replace(/,/g, ""); // 콤마 제거
-        if (!isNaN(num) && num !== "") {
-          // 1자리 숫자만 숫자 그대로 처리, 그 외는 문자열로 처리
-          return num.length === 1 ? num : `'${value.replace(/'/g, "''")}'`;
-        }
-
-        // 그 외 모든 값은 문자열로 처리
-        return `'${value.replace(/'/g, "''")}'`;
-      }
-
-      /* ==========================
-   INSERT 생성
-   ========================== */
-      // 입력된 데이터와 테이블명을 바탕으로 INSERT SQL 문을 생성합니다.
-      function generateInsert() {
-        // 테이블명 입력 필드에서 값 가져오기
-        const tableName = document
-          .getElementById("tableNameInput")
-          .value.trim();
-        // 데이터 입력 텍스트 영역에서 값 가져오기
-        const input = document.getElementById("inputData").value.trim();
-        // 출력 텍스트 영역 요소
-        const output = document.getElementById("output");
-        // 상태 메시지 표시 영역 요소
-        const status = document.getElementById("status-message");
-
-        // 테이블명이 비어있으면 에러 메시지 표시
-        if (!tableName) {
-          status.className = "error";
-          status.textContent = "테이블명을 입력하세요.";
-          return;
-        }
-
-        // 입력 데이터를 줄 단위로 분리하고 공백 제거 및 빈 줄 필터링
-        const lines = input
-          .split("\n")
-          .map((v) => v.trim())
-          .filter((v) => v);
-
-        // 컬럼명과 최소 한 줄의 데이터가 없으면 에러 메시지 표시
-        if (lines.length < 2) {
-          status.className = "error";
-          status.textContent = "컬럼과 최소 한 줄의 데이터가 필요합니다.";
-          return;
-        }
-
-        // 첫 번째 줄을 컬럼명으로 파싱 (따옴표 제거)
-        const columns = (lines[0].match(/"[^"]*"|\S+/g) || []).map((c) =>
-          c.replace(/"/g, "")
-        );
-
-        // 첫 번째 줄을 제외한 나머지 줄을 데이터 행으로 사용
-        const rows = lines.slice(1);
-        let sqlList = []; // 생성된 SQL 문을 저장할 배열
-
-        // 각 데이터 행에 대해 INSERT 문 생성
-        rows.forEach((row) => {
-          // 행 데이터를 공백 또는 따옴표로 묶인 문자열 기준으로 분리
-          const parts = row.match(/"[^"]*"|\S+/g) || [];
-          const padded = [...parts];
-
-          // 컬럼 수에 맞게 데이터 패딩 (누락된 값은 빈 문자열로 채움)
-          while (padded.length < columns.length) padded.push("");
-
-          // 각 값을 포맷팅하고 콤마로 연결
-          const formatted = padded.map((v) => formatValue(v)).join(", ");
-
-          // INSERT 문 생성 및 배열에 추가
-          sqlList.push(
-            `INSERT INTO ${tableName} (${columns.join(
-              ", "
-            )})\nVALUES (${formatted});`
-          );
-        });
-
-        // 생성된 SQL 문을 출력 텍스트 영역에 표시
-        output.value = sqlList.join("\n\n");
-
-        // 성공 메시지 표시
-        status.className = "success";
-        status.textContent = "INSERT 문 생성 완료!";
-      }
-
-      /* ==========================
-   복사하기
-   ========================== */
-      // 생성된 SQL 문을 클립보드에 복사합니다.
-      function copySql() {
-        // 출력 텍스트 영역의 값 가져오기
-        const text = document.getElementById("output").value;
-
-        // 내용이 없으면 복사하지 않음
-        if (!text.trim()) return;
-
-        // 클립보드에 텍스트 복사
-        navigator.clipboard.writeText(text).then(() => {
-          const status = document.getElementById("status-message");
-          status.className = "success";
-          status.textContent = "복사 완료!";
-        });
-      }
+        // DOM이 완전히 로드된 후 애플리케이션을 초기화합니다.
+        document.addEventListener("DOMContentLoaded", init);
+      })();
     </script>
   </body>
 </html>
