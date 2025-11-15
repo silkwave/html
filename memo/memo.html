@@ -6,9 +6,11 @@
     <title>Memo App</title>
 
     <style>
+      /* =======================
+         CSS 변수 및 기본 스타일
+         ======================= */
       :root {
-        --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          "Helvetica Neue", Arial, sans-serif;
+        --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
         /* Dark Theme */
         --background-primary: #1c1c1e;
@@ -26,8 +28,7 @@
 
       * {
         box-sizing: border-box;
-        transition: background-color 0.3s ease, color 0.3s ease,
-          border-color 0.3s ease;
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
       }
 
       body {
@@ -40,6 +41,9 @@
         overflow: hidden;
       }
 
+      /* =======================
+         레이아웃
+         ======================= */
       .container {
         display: flex;
         width: 100%;
@@ -117,17 +121,15 @@
         background-color: var(--border-color);
       }
 
+      /* =======================
+         메모 리스트
+         ======================= */
       #memo-list {
         list-style: none;
         padding: 0;
         margin: 0;
         overflow-y: auto;
         flex-grow: 1;
-      }
-
-      #memo-list ul {
-        list-style: none;
-        padding-left: 0;
       }
 
       .memo-item-container {
@@ -217,6 +219,9 @@
         padding: 20px;
       }
 
+      /* =======================
+         메인 콘텐츠 & 에디터
+         ======================= */
       .main-content {
         flex-grow: 1;
         display: flex;
@@ -302,7 +307,9 @@
         font-size: 48px;
       }
 
-      /* Toast Notification */
+      /* =======================
+         Toast Notification
+         ======================= */
       #toast-container {
         position: fixed;
         top: 20px;
@@ -344,7 +351,9 @@
         }
       }
 
-      /* Modal */
+      /* =======================
+         Modal
+         ======================= */
       .modal-overlay {
         position: fixed;
         top: 0;
@@ -415,6 +424,7 @@
     </style>
   </head>
   <body>
+    <!-- Toast & Modal -->
     <div id="toast-container"></div>
     <div id="modal-overlay" class="modal-overlay">
       <div class="modal-content">
@@ -427,6 +437,7 @@
       </div>
     </div>
 
+    <!-- Layout -->
     <div class="container">
       <aside class="sidebar">
         <div class="sidebar-header">
@@ -444,8 +455,14 @@
       <main class="main-content" id="main-content"></main>
     </div>
 
+    <!-- =======================
+         JavaScript
+         ======================= -->
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        /* =======================
+           상수 & DOM 요소
+           ======================= */
         const CONSTANTS = {
           STORAGE_KEY: "vanilla-memos",
           DEBOUNCE_DELAY: 500,
@@ -461,21 +478,17 @@
         let currentMemoId = null;
         let fileHandle = null;
 
-        // =================================================================================
-        // 유틸리티 & 데이터 순회 함수
-        // =================================================================================
-        const encodeToBase64 = (jsonString) =>
-          btoa(unescape(encodeURIComponent(jsonString)));
-        const decodeFromBase64 = (base64String) =>
-          decodeURIComponent(escape(atob(base64String)));
+        /* =======================
+           유틸리티
+           ======================= */
+        const encodeToBase64 = (jsonString) => btoa(unescape(encodeURIComponent(jsonString)));
+        const decodeFromBase64 = (base64String) => decodeURIComponent(escape(atob(base64String)));
 
         const createElement = (tag, className, innerHTML, attributes = {}) => {
           const element = document.createElement(tag);
           if (className) element.className = className;
           if (innerHTML) element.innerHTML = innerHTML;
-          Object.entries(attributes).forEach(([key, value]) =>
-            element.setAttribute(key, value)
-          );
+          Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
           return element;
         };
 
@@ -491,7 +504,7 @@
         }
 
         function traverseAndMigrate(nodes) {
-          return nodes.map((node) => ({
+          return nodes.map(node => ({
             ...node,
             isExpanded: node.isExpanded !== undefined ? node.isExpanded : true,
             children: node.children ? traverseAndMigrate(node.children) : [],
@@ -499,60 +512,53 @@
         }
 
         function removeMemoById(nodes, id) {
-          const index = nodes.findIndex((node) => node.id === id);
+          const index = nodes.findIndex(node => node.id === id);
           if (index > -1) {
             nodes.splice(index, 1);
             return true;
           }
           for (const node of nodes) {
-            if (node.children && removeMemoById(node.children, id)) {
-              return true;
-            }
+            if (node.children && removeMemoById(node.children, id)) return true;
           }
           return false;
         }
 
-        // =================================================================================
-        // UI 피드백 함수
-        // =================================================================================
+        /* =======================
+           UI 피드백
+           ======================= */
         const showToast = (message, type = "success") => {
           const toastContainer = document.getElementById("toast-container");
           const icon = type === "success" ? "✅" : "❌";
-          const toast = createElement(
-            "div",
-            `toast ${type}`,
-            `${icon} ${message}`
-          );
+          const toast = createElement("div", `toast ${type}`, `${icon} ${message}`);
           toastContainer.appendChild(toast);
           setTimeout(() => toast.remove(), 3000);
         };
 
         const showModal = (title, message) => {
-          return new Promise((resolve) => {
+          return new Promise(resolve => {
             const modalOverlay = document.getElementById("modal-overlay");
             document.getElementById("modal-title").textContent = title;
             document.getElementById("modal-message").textContent = message;
             modalOverlay.classList.add("visible");
+
             const confirmBtn = document.getElementById("modal-confirm-btn");
             const cancelBtn = document.getElementById("modal-cancel-btn");
-            const close = (value) => {
+
+            const close = value => {
               modalOverlay.classList.remove("visible");
               confirmBtn.replaceWith(confirmBtn.cloneNode(true));
               cancelBtn.replaceWith(cancelBtn.cloneNode(true));
               resolve(value);
             };
-            confirmBtn.addEventListener("click", () => close(true), {
-              once: true,
-            });
-            cancelBtn.addEventListener("click", () => close(false), {
-              once: true,
-            });
+
+            confirmBtn.addEventListener("click", () => close(true), { once: true });
+            cancelBtn.addEventListener("click", () => close(false), { once: true });
           });
         };
 
-        // =================================================================================
-        // 데이터 관리 함수
-        // =================================================================================
+        /* =======================
+           데이터 관리
+           ======================= */
         const loadMemos = () => {
           const memosJSON = localStorage.getItem(CONSTANTS.STORAGE_KEY);
           const parsedMemos = memosJSON ? JSON.parse(memosJSON) : [];
@@ -563,51 +569,36 @@
           localStorage.setItem(CONSTANTS.STORAGE_KEY, JSON.stringify(memos));
         };
 
-        // =================================================================================
-        // UI 렌더링 함수
-        // =================================================================================
+        /* =======================
+           UI 렌더링
+           ======================= */
         const renderMemoList = () => {
           memoList.innerHTML = "";
           if (memos.length === 0) {
-            const emptyLi = createElement(
-              "li",
-              "empty-message",
-              "메모가 없습니다."
-            );
+            const emptyLi = createElement("li", "empty-message", "메모가 없습니다.");
             memoList.appendChild(emptyLi);
             return;
           }
-          memos.forEach((memo) => renderMemoNode(memo, 0, memoList));
+          memos.forEach(memo => renderMemoNode(memo, 0, memoList));
         };
 
         const renderMemoNode = (memo, depth, container) => {
           const li = createElement("div", "memo-item-container");
-
           const itemDiv = createElement("div", "memo-item");
           itemDiv.style.paddingLeft = `${16 + depth * 20}px`;
-          if (memo.id === currentMemoId) {
-            itemDiv.classList.add("selected");
-          }
+          if (memo.id === currentMemoId) itemDiv.classList.add("selected");
 
           const contentDiv = createElement("div", "memo-item-content");
 
-          const toggleBtn = createElement(
-            "button",
-            "toggle-btn",
-            memo.isExpanded ? "▼" : "▶"
-          );
+          const toggleBtn = createElement("button", "toggle-btn", memo.isExpanded ? "▼" : "▶");
           toggleBtn.classList.toggle("hidden", memo.children.length === 0);
-          toggleBtn.addEventListener("click", (e) => {
+          toggleBtn.addEventListener("click", e => {
             e.stopPropagation();
             toggleExpand(memo.id);
           });
 
-          const titleSpan = createElement(
-            "span",
-            "memo-title-text",
-            memo.title
-          );
-          titleSpan.addEventListener("click", (e) => {
+          const titleSpan = createElement("span", "memo-title-text", memo.title);
+          titleSpan.addEventListener("click", e => {
             e.stopPropagation();
             selectMemo(memo.id);
           });
@@ -615,24 +606,14 @@
           contentDiv.append(toggleBtn, titleSpan);
 
           const actionsDiv = createElement("div", "memo-actions");
-          const addChildBtn = createElement(
-            "button",
-            "action-btn add-child-btn",
-            "➕",
-            { title: "자식 메모 추가" }
-          );
-          addChildBtn.addEventListener("click", (e) => {
+          const addChildBtn = createElement("button", "action-btn add-child-btn", "➕", { title: "자식 메모 추가" });
+          addChildBtn.addEventListener("click", e => {
             e.stopPropagation();
             addChildMemo(memo.id);
           });
 
-          const deleteBtn = createElement(
-            "button",
-            "action-btn delete-btn",
-            "❌",
-            { title: "메모 삭제" }
-          );
-          deleteBtn.addEventListener("click", (e) => {
+          const deleteBtn = createElement("button", "action-btn delete-btn", "❌", { title: "메모 삭제" });
+          deleteBtn.addEventListener("click", e => {
             e.stopPropagation();
             deleteMemo(memo.id);
           });
@@ -645,39 +626,23 @@
           if (memo.isExpanded && memo.children.length > 0) {
             const ul = createElement("ul", "memo-child-list");
             li.appendChild(ul);
-            memo.children.forEach((child) =>
-              renderMemoNode(child, depth + 1, ul)
-            );
+            memo.children.forEach(child => renderMemoNode(child, depth + 1, ul));
           }
         };
 
         const renderEditor = () => {
           const memo = findMemoById(memos, currentMemoId);
           if (!memo) {
-            mainContent.innerHTML =
-              '<div class="placeholder"><span class="placeholder-icon">📝</span><span>메모를 선택하거나 새로 만드세요.</span></div>';
+            mainContent.innerHTML = '<div class="placeholder"><span class="placeholder-icon">📝</span><span>메모를 선택하거나 새로 만드세요.</span></div>';
             return;
           }
 
           mainContent.innerHTML = "";
           const editorContainer = createElement("div", "editor-container");
           const editorHeader = createElement("div", "editor-header");
-          const deleteBtn = createElement("button", null, "🗑️", {
-            id: "delete-memo-btn",
-            title: "삭제",
-          });
-          const titleInput = createElement("input", null, null, {
-            type: "text",
-            id: "memo-title",
-            value: memo.title,
-            placeholder: "제목",
-          });
-          const contentTextarea = createElement(
-            "textarea",
-            null,
-            memo.content,
-            { id: "memo-content", placeholder: "내용을 입력하세요..." }
-          );
+          const deleteBtn = createElement("button", null, "🗑️", { id: "delete-memo-btn", title: "삭제" });
+          const titleInput = createElement("input", null, null, { type: "text", id: "memo-title", value: memo.title, placeholder: "제목" });
+          const contentTextarea = createElement("textarea", null, memo.content, { id: "memo-content", placeholder: "내용을 입력하세요..." });
 
           editorHeader.appendChild(deleteBtn);
           editorContainer.append(editorHeader, titleInput, contentTextarea);
@@ -702,16 +667,16 @@
           deleteBtn.addEventListener("click", () => deleteMemo(currentMemoId));
         };
 
-        // =================================================================================
-        // 핵심 로직 및 이벤트 핸들러
-        // =================================================================================
-        const selectMemo = (id) => {
+        /* =======================
+           핵심 이벤트 핸들러
+           ======================= */
+        const selectMemo = id => {
           currentMemoId = id;
           renderMemoList();
           renderEditor();
         };
 
-        const addChildMemo = (parentId) => {
+        const addChildMemo = parentId => {
           const parentMemo = findMemoById(memos, parentId);
           if (!parentMemo) return;
 
@@ -723,7 +688,7 @@
             isExpanded: true,
           };
           parentMemo.children.unshift(newMemo);
-          parentMemo.isExpanded = true; // 자식 추가시 부모를 항상 펼침
+          parentMemo.isExpanded = true;
           saveMemos();
           currentMemoId = newMemo.id;
           renderMemoList();
@@ -732,7 +697,7 @@
           document.getElementById("memo-title").select();
         };
 
-        const toggleExpand = (memoId) => {
+        const toggleExpand = memoId => {
           const memo = findMemoById(memos, memoId);
           if (memo) {
             memo.isExpanded = !memo.isExpanded;
@@ -760,16 +725,11 @@
 
         async function deleteMemo(idToDelete) {
           if (!idToDelete) return;
-          const confirmed = await showModal(
-            "메모 삭제",
-            "정말로 이 메모와 모든 하위 메모를 삭제하시겠습니까?"
-          );
+          const confirmed = await showModal("메모 삭제", "정말로 이 메모와 모든 하위 메모를 삭제하시겠습니까?");
           if (confirmed) {
             if (removeMemoById(memos, idToDelete)) {
               saveMemos();
-              if (currentMemoId === idToDelete) {
-                currentMemoId = null;
-              }
+              if (currentMemoId === idToDelete) currentMemoId = null;
               renderMemoList();
               renderEditor();
               showToast("메모가 삭제되었습니다.");
@@ -777,23 +737,23 @@
           }
         }
 
+        /* =======================
+           파일 입출력
+           ======================= */
         async function saveFile() {
           if (memos.length === 0) {
             showToast("저장할 메모가 없습니다.", "error");
             return;
           }
+
           const memosJSON = JSON.stringify(memos);
           const base64Data = encodeToBase64(memosJSON);
+
           if (fileHandle) {
-            const confirmed = await showModal(
-              "파일 저장",
-              `'${fileHandle.name}' 파일에 변경 내용을 덮어쓰시겠습니까?`
-            );
+            const confirmed = await showModal("파일 저장", `'${fileHandle.name}' 파일에 변경 내용을 덮어쓰시겠습니까?`);
             if (!confirmed) return;
             try {
-              const writable = await fileHandle.createWritable({
-                keepExistingData: false,
-              });
+              const writable = await fileHandle.createWritable({ keepExistingData: false });
               await writable.write(base64Data);
               await writable.close();
               showToast("파일에 성공적으로 저장되었습니다.");
@@ -807,17 +767,10 @@
             try {
               const handle = await window.showSaveFilePicker({
                 suggestedName: "memos.json",
-                types: [
-                  {
-                    description: "JSON Files",
-                    accept: { "application/json": [".json"] },
-                  },
-                ],
+                types: [{ description: "JSON Files", accept: { "application/json": [".json"] } }],
               });
               fileHandle = handle;
-              const writable = await fileHandle.createWritable({
-                keepExistingData: false,
-              });
+              const writable = await fileHandle.createWritable({ keepExistingData: false });
               await writable.write(base64Data);
               await writable.close();
               showToast("파일이 성공적으로 저장되었습니다.");
@@ -831,20 +784,11 @@
         }
 
         async function openFile() {
-          const confirmed = await showModal(
-            "파일 열기",
-            "파일을 열면 현재 메모가 모두 교체됩니다. 계속하시겠습니까?"
-          );
+          const confirmed = await showModal("파일 열기", "파일을 열면 현재 메모가 모두 교체됩니다. 계속하시겠습니까?");
           if (!confirmed) return;
+
           try {
-            const [handle] = await window.showOpenFilePicker({
-              types: [
-                {
-                  description: "JSON Files",
-                  accept: { "application/json": [".json"] },
-                },
-              ],
-            });
+            const [handle] = await window.showOpenFilePicker({ types: [{ description: "JSON Files", accept: { "application/json": [".json"] } }] });
             fileHandle = handle;
             const file = await fileHandle.getFile();
             const content = await file.text();
@@ -869,21 +813,18 @@
           }
         }
 
-        // =================================================================================
-        // 애플리케이션 초기화
-        // =================================================================================
+        /* =======================
+           초기화
+           ======================= */
         function init() {
           if (!("showOpenFilePicker" in window)) {
             const fileIOButtons = document.querySelector(".file-io-buttons");
             if (fileIOButtons) {
-              fileIOButtons.innerHTML =
-                '<p style="font-size: 12px; color: var(--text-secondary);">파일 입출력 미지원 브라우저</p>';
+              fileIOButtons.innerHTML = '<p style="font-size: 12px; color: var(--text-secondary);">파일 입출력 미지원 브라우저</p>';
             }
           }
           loadMemos();
-          if (memos.length > 0 && !findMemoById(memos, currentMemoId)) {
-            currentMemoId = memos[0].id;
-          }
+          if (memos.length > 0 && !findMemoById(memos, currentMemoId)) currentMemoId = memos[0].id;
           renderMemoList();
           renderEditor();
         }
