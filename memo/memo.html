@@ -125,50 +125,77 @@
         flex-grow: 1;
       }
 
-      #memo-list li {
-        display: flex; /* Use flexbox to align title and button */
-        justify-content: space-between; /* Space out title and button */
-        align-items: center; /* Vertically align items */
-        padding: 12px 16px;
-        cursor: pointer;
+      #memo-list ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      .memo-item-container {
         border-bottom: 1px solid var(--border-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 15px;
       }
 
-      #memo-list li .memo-title-text {
-        flex-grow: 1; /* Allow title to take up available space */
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      .memo-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        cursor: pointer;
       }
-
-      #memo-list li:hover {
+      .memo-item:hover {
         background-color: var(--background-tertiary);
       }
-
-      #memo-list li.selected {
+      .memo-item.selected {
         background-color: var(--selected-color);
+      }
+      .memo-item.selected .memo-title-text {
         font-weight: 600;
         color: var(--accent-color);
       }
 
-      #memo-list .empty-message {
-        cursor: default;
-        color: var(--text-secondary);
-        text-align: center;
-        padding-top: 20px;
-      }
-      #memo-list .empty-message:hover {
-        background-color: transparent;
+      .memo-item-content {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .list-delete-btn {
+      .toggle-btn {
         background: none;
         border: none;
-        color: var(--text-secondary); /* Lighter color for subtle appearance */
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 4px;
+        margin-right: 4px;
+        flex-shrink: 0;
+        width: 20px;
+        text-align: center;
+      }
+      .toggle-btn.hidden {
+        visibility: hidden;
+      }
+
+      .memo-title-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .memo-actions {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      .memo-item:hover .memo-actions {
+        opacity: 1;
+      }
+
+      .action-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
         cursor: pointer;
         font-size: 16px;
         padding: 4px;
@@ -176,18 +203,18 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-left: 8px; /* Space between title and button */
-        flex-shrink: 0; /* Prevent button from shrinking */
-        opacity: 0; /* Hidden by default */
-        transition: opacity 0.2s ease, color 0.2s ease;
+      }
+      .action-btn:hover {
+        color: var(--text-primary);
+      }
+      .delete-btn:hover {
+        color: var(--danger-color);
       }
 
-      #memo-list li:hover .list-delete-btn {
-        opacity: 1; /* Show on hover */
-      }
-
-      .list-delete-btn:hover {
-        color: var(--danger-color); /* Change color on hover */
+      #memo-list .empty-message {
+        color: var(--text-secondary);
+        text-align: center;
+        padding: 20px;
       }
 
       .main-content {
@@ -406,16 +433,10 @@
           <div class="header-top-row">
             <h1 class="app-title">Memo</h1>
           </div>
-          <button id="add-memo-btn">
-            ➕ 새 메모
-          </button>
+          <button id="add-memo-btn">➕ 새 루트 메모</button>
           <div class="file-io-buttons">
-            <button id="open-file-btn" class="io-btn">
-              📂 열기
-            </button>
-            <button id="save-btn" class="io-btn">
-              💾 저장
-            </button>
+            <button id="open-file-btn" class="io-btn">📂 열기</button>
+            <button id="save-btn" class="io-btn">💾 저장</button>
           </div>
         </div>
         <ul id="memo-list"></ul>
@@ -441,7 +462,7 @@
         let fileHandle = null;
 
         // =================================================================================
-        // 유틸리티 함수 (Utility Functions)
+        // 유틸리티 & 데이터 순회 함수
         // =================================================================================
         const encodeToBase64 = (jsonString) =>
           btoa(unescape(encodeURIComponent(jsonString)));
@@ -458,6 +479,42 @@
           return element;
         };
 
+        function findMemoById(nodes, id) {
+          for (const node of nodes) {
+            if (node.id === id) return node;
+            if (node.children) {
+              const found = findMemoById(node.children, id);
+              if (found) return found;
+            }
+          }
+          return null;
+        }
+
+        function traverseAndMigrate(nodes) {
+          return nodes.map((node) => ({
+            ...node,
+            isExpanded: node.isExpanded !== undefined ? node.isExpanded : true,
+            children: node.children ? traverseAndMigrate(node.children) : [],
+          }));
+        }
+
+        function removeMemoById(nodes, id) {
+          const index = nodes.findIndex((node) => node.id === id);
+          if (index > -1) {
+            nodes.splice(index, 1);
+            return true;
+          }
+          for (const node of nodes) {
+            if (node.children && removeMemoById(node.children, id)) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        // =================================================================================
+        // UI 피드백 함수
+        // =================================================================================
         const showToast = (message, type = "success") => {
           const toastContainer = document.getElementById("toast-container");
           const icon = type === "success" ? "✅" : "❌";
@@ -475,19 +532,15 @@
             const modalOverlay = document.getElementById("modal-overlay");
             document.getElementById("modal-title").textContent = title;
             document.getElementById("modal-message").textContent = message;
-
             modalOverlay.classList.add("visible");
-
             const confirmBtn = document.getElementById("modal-confirm-btn");
             const cancelBtn = document.getElementById("modal-cancel-btn");
-
             const close = (value) => {
               modalOverlay.classList.remove("visible");
               confirmBtn.replaceWith(confirmBtn.cloneNode(true));
               cancelBtn.replaceWith(cancelBtn.cloneNode(true));
               resolve(value);
             };
-
             confirmBtn.addEventListener("click", () => close(true), {
               once: true,
             });
@@ -498,11 +551,12 @@
         };
 
         // =================================================================================
-        // 데이터 관리 함수 (Data Management)
+        // 데이터 관리 함수
         // =================================================================================
         const loadMemos = () => {
           const memosJSON = localStorage.getItem(CONSTANTS.STORAGE_KEY);
-          memos = memosJSON ? JSON.parse(memosJSON) : [];
+          const parsedMemos = memosJSON ? JSON.parse(memosJSON) : [];
+          memos = traverseAndMigrate(parsedMemos);
         };
 
         const saveMemos = () => {
@@ -510,49 +564,95 @@
         };
 
         // =================================================================================
-        // UI 렌더링 함수 (UI Rendering)
+        // UI 렌더링 함수
         // =================================================================================
         const renderMemoList = () => {
           memoList.innerHTML = "";
           if (memos.length === 0) {
-            memoList.innerHTML =
-              '<li class="empty-message">메모가 없습니다.</li>';
+            const emptyLi = createElement(
+              "li",
+              "empty-message",
+              "메모가 없습니다."
+            );
+            memoList.appendChild(emptyLi);
             return;
           }
-          memos.forEach((memo) => {
-            const li = createElement("li", null, null, { "data-id": memo.id });
+          memos.forEach((memo) => renderMemoNode(memo, 0, memoList));
+        };
 
-            const titleSpan = createElement("span", "memo-title-text", memo.title);
-            titleSpan.addEventListener("click", (e) => {
-              e.stopPropagation();
-              selectMemo(memo.id);
-            });
+        const renderMemoNode = (memo, depth, container) => {
+          const li = createElement("div", "memo-item-container");
 
-            const deleteButton = createElement(
-              "button",
-              "list-delete-btn",
-              "❌",
-              { "data-id": memo.id, title: "메모 삭제" }
-            );
-            deleteButton.addEventListener("click", (e) => {
-              e.stopPropagation();
-              deleteMemoFromList(memo.id);
-            });
+          const itemDiv = createElement("div", "memo-item");
+          itemDiv.style.paddingLeft = `${16 + depth * 20}px`;
+          if (memo.id === currentMemoId) {
+            itemDiv.classList.add("selected");
+          }
 
-            li.appendChild(titleSpan);
-            li.appendChild(deleteButton);
+          const contentDiv = createElement("div", "memo-item-content");
 
-            if (memo.id === currentMemoId) {
-              li.classList.add("selected");
-            }
-            li.addEventListener("click", () => selectMemo(memo.id));
-            memoList.appendChild(li);
+          const toggleBtn = createElement(
+            "button",
+            "toggle-btn",
+            memo.isExpanded ? "▼" : "▶"
+          );
+          toggleBtn.classList.toggle("hidden", memo.children.length === 0);
+          toggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleExpand(memo.id);
           });
+
+          const titleSpan = createElement(
+            "span",
+            "memo-title-text",
+            memo.title
+          );
+          titleSpan.addEventListener("click", (e) => {
+            e.stopPropagation();
+            selectMemo(memo.id);
+          });
+
+          contentDiv.append(toggleBtn, titleSpan);
+
+          const actionsDiv = createElement("div", "memo-actions");
+          const addChildBtn = createElement(
+            "button",
+            "action-btn add-child-btn",
+            "➕",
+            { title: "자식 메모 추가" }
+          );
+          addChildBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            addChildMemo(memo.id);
+          });
+
+          const deleteBtn = createElement(
+            "button",
+            "action-btn delete-btn",
+            "❌",
+            { title: "메모 삭제" }
+          );
+          deleteBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteMemo(memo.id);
+          });
+
+          actionsDiv.append(addChildBtn, deleteBtn);
+          itemDiv.append(contentDiv, actionsDiv);
+          li.appendChild(itemDiv);
+          container.appendChild(li);
+
+          if (memo.isExpanded && memo.children.length > 0) {
+            const ul = createElement("ul", "memo-child-list");
+            li.appendChild(ul);
+            memo.children.forEach((child) =>
+              renderMemoNode(child, depth + 1, ul)
+            );
+          }
         };
 
         const renderEditor = () => {
-          const memo = memos.find((m) => m.id === currentMemoId);
-
+          const memo = findMemoById(memos, currentMemoId);
           if (!memo) {
             mainContent.innerHTML =
               '<div class="placeholder"><span class="placeholder-icon">📝</span><span>메모를 선택하거나 새로 만드세요.</span></div>';
@@ -562,12 +662,10 @@
           mainContent.innerHTML = "";
           const editorContainer = createElement("div", "editor-container");
           const editorHeader = createElement("div", "editor-header");
-          const deleteBtn = createElement(
-            "button",
-            null,
-            "🗑️",
-            { id: "delete-memo-btn", title: "삭제" }
-          );
+          const deleteBtn = createElement("button", null, "🗑️", {
+            id: "delete-memo-btn",
+            title: "삭제",
+          });
           const titleInput = createElement("input", null, null, {
             type: "text",
             id: "memo-title",
@@ -589,7 +687,7 @@
           const autoSave = () => {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-              const currentMemo = memos.find((m) => m.id === currentMemoId);
+              const currentMemo = findMemoById(memos, currentMemoId);
               if (currentMemo) {
                 currentMemo.title = titleInput.value;
                 currentMemo.content = contentTextarea.value;
@@ -601,11 +699,11 @@
 
           titleInput.addEventListener("input", autoSave);
           contentTextarea.addEventListener("input", autoSave);
-          deleteBtn.addEventListener("click", deleteMemo);
+          deleteBtn.addEventListener("click", () => deleteMemo(currentMemoId));
         };
 
         // =================================================================================
-        // 핵심 로직 및 이벤트 핸들러 (Core Logic & Event Handlers)
+        // 핵심 로직 및 이벤트 핸들러
         // =================================================================================
         const selectMemo = (id) => {
           currentMemoId = id;
@@ -613,11 +711,43 @@
           renderEditor();
         };
 
+        const addChildMemo = (parentId) => {
+          const parentMemo = findMemoById(memos, parentId);
+          if (!parentMemo) return;
+
+          const newMemo = {
+            id: Date.now().toString(),
+            title: "새 자식 메모",
+            content: "",
+            children: [],
+            isExpanded: true,
+          };
+          parentMemo.children.unshift(newMemo);
+          parentMemo.isExpanded = true; // 자식 추가시 부모를 항상 펼침
+          saveMemos();
+          currentMemoId = newMemo.id;
+          renderMemoList();
+          renderEditor();
+          document.getElementById("memo-title").focus();
+          document.getElementById("memo-title").select();
+        };
+
+        const toggleExpand = (memoId) => {
+          const memo = findMemoById(memos, memoId);
+          if (memo) {
+            memo.isExpanded = !memo.isExpanded;
+            saveMemos();
+            renderMemoList();
+          }
+        };
+
         addMemoBtn.addEventListener("click", () => {
           const newMemo = {
             id: Date.now().toString(),
-            title: "새 메모",
+            title: "새 루트 메모",
             content: "",
+            children: [],
+            isExpanded: true,
           };
           memos.unshift(newMemo);
           saveMemos();
@@ -628,37 +758,22 @@
           document.getElementById("memo-title").select();
         });
 
-        async function deleteMemo() {
-          if (!currentMemoId) return;
+        async function deleteMemo(idToDelete) {
+          if (!idToDelete) return;
           const confirmed = await showModal(
             "메모 삭제",
-            "정말로 이 메모를 삭제하시겠습니까?"
+            "정말로 이 메모와 모든 하위 메모를 삭제하시겠습니까?"
           );
           if (confirmed) {
-            memos = memos.filter((memo) => memo.id !== currentMemoId);
-            saveMemos();
-            currentMemoId = null;
-            renderMemoList();
-            renderEditor();
-            showToast("메모가 삭제되었습니다.");
-          }
-        }
-
-        async function deleteMemoFromList(idToDelete) {
-          const confirmed = await showModal(
-            "메모 삭제",
-            "정말로 이 메모를 삭제하시겠습니까?"
-          );
-          if (confirmed) {
-            memos = memos.filter((memo) => memo.id !== idToDelete);
-            saveMemos();
-            // If the deleted memo was the currently selected one, clear currentMemoId
-            if (currentMemoId === idToDelete) {
-              currentMemoId = null;
+            if (removeMemoById(memos, idToDelete)) {
+              saveMemos();
+              if (currentMemoId === idToDelete) {
+                currentMemoId = null;
+              }
+              renderMemoList();
+              renderEditor();
+              showToast("메모가 삭제되었습니다.");
             }
-            renderMemoList();
-            renderEditor(); // Re-render editor to show placeholder if no memo is selected
-            showToast("메모가 삭제되었습니다.");
           }
         }
 
@@ -667,17 +782,14 @@
             showToast("저장할 메모가 없습니다.", "error");
             return;
           }
-
           const memosJSON = JSON.stringify(memos);
           const base64Data = encodeToBase64(memosJSON);
-
           if (fileHandle) {
             const confirmed = await showModal(
               "파일 저장",
               `'${fileHandle.name}' 파일에 변경 내용을 덮어쓰시겠습니까?`
             );
             if (!confirmed) return;
-
             try {
               const writable = await fileHandle.createWritable({
                 keepExistingData: false,
@@ -724,7 +836,6 @@
             "파일을 열면 현재 메모가 모두 교체됩니다. 계속하시겠습니까?"
           );
           if (!confirmed) return;
-
           try {
             const [handle] = await window.showOpenFilePicker({
               types: [
@@ -737,11 +848,10 @@
             fileHandle = handle;
             const file = await fileHandle.getFile();
             const content = await file.text();
-
             try {
               const memosJSON = decodeFromBase64(content);
               const importedMemos = JSON.parse(memosJSON);
-              memos = importedMemos;
+              memos = traverseAndMigrate(importedMemos);
               currentMemoId = memos.length > 0 ? memos[0].id : null;
               saveMemos();
               renderMemoList();
@@ -760,7 +870,7 @@
         }
 
         // =================================================================================
-        // 애플리케이션 초기화 (Initialization)
+        // 애플리케이션 초기화
         // =================================================================================
         function init() {
           if (!("showOpenFilePicker" in window)) {
@@ -770,9 +880,8 @@
                 '<p style="font-size: 12px; color: var(--text-secondary);">파일 입출력 미지원 브라우저</p>';
             }
           }
-
           loadMemos();
-          if (memos.length > 0) {
+          if (memos.length > 0 && !findMemoById(memos, currentMemoId)) {
             currentMemoId = memos[0].id;
           }
           renderMemoList();
