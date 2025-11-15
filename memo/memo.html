@@ -210,6 +210,7 @@
     </div>
 
     <script>
+
       // DOMContentLoaded 이벤트 리스너: 문서 로드 완료 후 실행
       document.addEventListener("DOMContentLoaded", () => {
                 // 로컬 스토리지 키, 디바운스 지연 시간 설정
@@ -262,6 +263,7 @@
                   }
                   return false;
                 };
+
                 // 메모를 로컬 스토리지에 저장
                 const saveMemos = () =>
                   localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
@@ -270,12 +272,14 @@
                   const d = localStorage.getItem(STORAGE_KEY);
                   memos = d ? traverseAndMigrate(JSON.parse(d)) : [];
                 };
+
                 // 토스트 메시지 표시
                 const showToast = (msg, type = "success") => {
                   const t = createElement("div", "toast", msg);
                   document.getElementById("toast-container").appendChild(t);
                   setTimeout(() => t.remove(), 3000);
                 };
+
                 // 모달 창 표시 및 사용자 응답 처리
                 const showModal = (title, msg) =>
                   new Promise((res) => {
@@ -291,9 +295,11 @@
                       x.replaceWith(x.cloneNode(true));
                       res(v);
                     };
+                    
                     c.addEventListener("click", () => close(true), { once: true });
                     x.addEventListener("click", () => close(false), { once: true });
                   });
+
                 // 문자열을 Base64로 인코딩
                 const encodeBase64 = (s) => btoa(unescape(encodeURIComponent(s)));
                 // Base64 문자열을 디코딩
@@ -323,6 +329,7 @@
                     "memo-title-text",
                     memo.title
                   );
+
                   titleSpan.addEventListener("click", () => {
                     currentMemoId = memo.id;
                     renderMemoList();
@@ -336,12 +343,14 @@
                     e.stopPropagation();
                     addChildMemo(memo.id);
                   });
+
                   const del = createElement("button", null, "❌");
                   del.title = "삭제";
                   del.addEventListener("click", (e) => {
                     e.stopPropagation();
                     deleteMemo(memo.id);
                   });
+
                   actions.append(addChild, del);
         
                   const toggle = createElement(
@@ -349,6 +358,7 @@
                     null,
                     memo.isExpanded ? "▼" : "▶"
                   );
+
                   toggle.title = "접기/펼치기";
                   toggle.style.marginRight = "4px";
                   toggle.addEventListener("click", (e) => {
@@ -357,6 +367,7 @@
                     saveMemos();
                     renderMemoList();
                   });
+
                   toggle.style.visibility =
                     memo.children.length > 0 ? "visible" : "hidden";
         
@@ -366,10 +377,12 @@
         
                   if (memo.isExpanded && memo.children.length > 0)
                     memo.children.forEach((c) => renderNode(c, depth + 1, container));
+
                 };
         
                 // 메모 편집기를 렌더링
                 const renderEditor = () => {
+
                   const memo = findMemoById(memos, currentMemoId);
                   mainContent.innerHTML = "";
                   if (!memo) {
@@ -382,9 +395,11 @@
                     type: "text",
                     value: memo.title,
                   });
+
                   const content = createElement("textarea", null, memo.content, {
                     id: "memo-content",
                   });
+
                   const container = createElement("div", "editor-container");
                   container.append(title, content);
                   mainContent.appendChild(container);
@@ -403,8 +418,10 @@
                       }
                     }, DEBOUNCE_DELAY);
                   };
+
                   title.addEventListener("input", autosave);
                   content.addEventListener("input", autosave);
+
                 };
         
                 // 새 루트 메모 추가 버튼 이벤트 리스너
@@ -418,6 +435,7 @@
                       children: [],
                       isExpanded: true,
                     };
+
                     memos.unshift(m);
                     currentMemoId = m.id;
                     saveMemos();
@@ -429,6 +447,7 @@
         
                 // 자식 메모 추가 함수
                 const addChildMemo = (parentId) => {
+
                   const parent = findMemoById(memos, parentId);
                   if (!parent) return;
                   const m = {
@@ -438,6 +457,7 @@
                     children: [],
                     isExpanded: true,
                   };
+
                   parent.children.unshift(m);
                   parent.isExpanded = true;
                   saveMemos();
@@ -455,6 +475,7 @@
                     "메모 삭제",
                     "정말 삭제하시겠습니까?"
                   );
+
                   if (confirmed) {
                     if (removeMemoById(memos, id)) {
                       saveMemos();
@@ -465,6 +486,7 @@
                     }
                   }
                 };
+
         
                 // 파일 저장 함수 (File System Access API 사용)
                 const saveFile = async () => {
@@ -472,6 +494,7 @@
                     showToast("저장할 메모 없음", "error");
                     return;
                   }
+
                   const data = encodeBase64(JSON.stringify(memos));
                   try {
                     // 기존 파일 핸들이 있으면 덮어쓰기 확인
@@ -507,6 +530,7 @@
                     "파일 열기",
                     "현재 메모 모두 교체됩니다. 계속?"
                   );
+
                   if (!confirmed) return;
                   try {
                     const [handle] = await window.showOpenFilePicker({
@@ -517,6 +541,7 @@
                         },
                       ],
                     });
+
                     fileHandle = handle;
                     const file = await handle.getFile();
                     const content = await file.text();
@@ -546,6 +571,7 @@
                   currentMemoId = memos[0].id;
                 renderMemoList();
                 renderEditor();
-              });    </script>
+              });    
+    </script>
   </body>
 </html>
