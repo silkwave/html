@@ -313,10 +313,26 @@
             x.addEventListener("click", () => close(false), { once: true });
           });
 
+        // XOR-based string "encryption"
+        const xorStrings = (s, key) => {
+          if (!key) return s;
+          let res = "";
+          for (let i = 0; i < s.length; i++) {
+            res += String.fromCharCode(s.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+          }
+          return res;
+        };
+
         // 문자열을 Base64로 인코딩
-        const encodeBase64 = (s) => btoa(unescape(encodeURIComponent(s)));
+        const encodeBase64 = (s, masterkey) => {
+            const strToEncode = xorStrings(s, masterkey);
+            return btoa(unescape(encodeURIComponent(strToEncode)));
+        }
         // Base64 문자열을 디코딩
-        const decodeBase64 = (s) => decodeURIComponent(escape(atob(s)));
+        const decodeBase64 = (s, masterkey) => {
+            const decoded = decodeURIComponent(escape(atob(s)));
+            return xorStrings(decoded, masterkey);
+        }
 
         // 메모 목록을 렌더링
         const renderMemoList = () => {
@@ -503,7 +519,9 @@
             return;
           }
 
-          const data = encodeBase64(JSON.stringify(memos));
+          const masterkey = prompt("암호화에 사용할 마스터 키를 입력하세요. (입력하지 않으면 암호화되지 않습니다)");
+
+          const data = encodeBase64(JSON.stringify(memos), masterkey);
           try {
             // 기존 파일 핸들이 있으면 덮어쓰기 확인
             if (fileHandle) {
@@ -552,8 +570,17 @@
             fileHandle = handle;
             const file = await handle.getFile();
             const content = await file.text();
-            // Base64 디코딩 후 메모 로드
-            memos = traverseAndMigrate(JSON.parse(decodeBase64(content)));
+            
+            const masterkey = prompt("암호화된 파일인 경우 마스터 키를 입력하세요.");
+
+            try {
+                // Base64 디코딩 후 메모 로드
+                memos = traverseAndMigrate(JSON.parse(decodeBase64(content, masterkey)));
+            } catch (e) {
+                showToast("파일을 열 수 없습니다. 마스터 키가 올바르지 않거나 파일이 손상되었을 수 있습니다.", "error");
+                return;
+            }
+
             currentMemoId = memos.length > 0 ? memos[0].id : null;
             saveMemos();
             renderMemoList();
