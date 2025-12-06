@@ -183,6 +183,12 @@
         color: var(--muted-text-color);
         font-size: 13px;
       }
+      .mt-8 {
+        margin-top: 8px;
+      }
+      .ml-8 {
+        margin-left: 8px;
+      }
       .jsonBox {
         font-family: var(--font-mono);
         white-space: pre-wrap;
@@ -367,7 +373,6 @@
       </div>
       <button id="theme-toggle-btn" title="Toggle light/dark theme">
         <svg
-          xmlns="http://www.w3.org/2000/svg"
           width="20"
           height="20"
           viewBox="0 0 24 24"
@@ -424,13 +429,13 @@
 
         <div class="section">
           <div class="label">JSON 편집기 — Header</div>
-          <textarea id="headerEditor" style="width:800px; height:100px;"></textarea>
+          <textarea id="headerEditor" rows="5"></textarea>
         </div>
 
         <div class="section">
           <div class="label">JSON 편집기 — Payload</div>
-          <textarea id="payloadEditor" style="width:800px; height:150px;"></textarea>
-              <div class="muted" style="margin-top: 8px">
+          <textarea id="payloadEditor" rows="7"></textarea>
+          <div class="muted mt-8">
             값은 자동으로 타입 추론됩니다(예: true/false, 숫자, JSON 객체는
             중괄호로 입력).
           </div>
@@ -455,7 +460,7 @@
             />
           </div>
 
-          <div style="margin-top: 8px" class="row">
+          <div class="row mt-8">
             <input
               id="secretInput"
               type="text"
@@ -463,30 +468,30 @@
             />
           </div>
 
-          <div style="margin-top: 8px">
+          <div class="mt-8">
             <label class="muted">Private Key (서명용):</label>
             <textarea
               id="privKeyText"
               rows="4"
               placeholder="-----BEGIN PRIVATE KEY-----... (PKCS#8) 또는 개인키 파일 업로드 사용"
             ></textarea>
-            <div class="row" style="margin-top: 8px">
+            <div class="row mt-8">
               <input id="filePriv" type="file" accept=".pem,.key" />
               <button id="usePriv" class="btn small">개인키로 서명</button>
               <button id="exportJwt" class="btn small">JWT 생성(서명)</button>
             </div>
           </div>
 
-          <div style="margin-top: 8px">
+          <div class="mt-8">
             <label class="muted">Public Key (검증용, PEM SPKI)</label>
             <textarea
               id="pubKeyText"
               rows="3"
               placeholder="-----BEGIN PUBLIC KEY-----..."
             ></textarea>
-            <div style="margin-top: 8px" class="row">
+            <div class="row mt-8">
               <button id="verifyBtn" class="btn small">서명 검증</button>
-              <div id="verifyResult" style="margin-left: 8px"></div>
+              <div id="verifyResult" class="ml-8"></div>
             </div>
           </div>
           <div class="footerNote">
@@ -512,13 +517,13 @@
 
         <div class="section">
           <div class="label">Signature (base64url)</div>
-          <div id="sigBox" class="jsonBox" style="font-family: monospace"></div>
+          <div id="sigBox" class="jsonBox"></div>
         </div>
 
         <div class="section">
           <div class="label">생성된 JWT (복사하여 사용)</div>
           <textarea id="outJwt" rows="3" readonly class="jsonBox"></textarea>
-          <div style="margin-top: 8px" class="row">
+          <div class="row mt-8">
             <button id="copyBtn" class="btn small">복사</button>
             <button id="clearBtn" class="btn small">지우기</button>
           </div>
