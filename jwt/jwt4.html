@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>
+      JWT Studio — Sign (HS/RS/ES) in Browser + JSON Editor + Exp Timeline
+    </title>
+    <style>
+      :root {
+        /* Color Palette */
+        --dark-bg: #1a1b26;
+        --dark-panel: #24283b;
+        --dark-surface: #1e202e;
+        --text-main-dark: #c0caf5;
+        --border-color-dark: #3b4261;
+        --muted-text-dark: #5c6370;
+
+        --light-bg: #f8f9fa;
+        --light-panel: #ffffff;
+        --light-surface: #f1f3f5;
+        --text-main-light: #212529;
+        --border-color-light: #dee2e6;
+        --muted-text-light: #6c757d;
+
+        --accent: #7aa2f7;
+        --accent-hover: #9ece6a;
+        --accent-text: #ffffff;
+
+        --success: #9ece6a;
+        --error: #f7768e;
+        --warning: #e0af68;
+
+        --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Helvetica Neue", "Ubuntu", sans-serif;
+        --font-mono: "Fira Code", "Consolas", "Monaco", monospace;
+
+        /* Semantic variables (default to dark) */
+        --bg-color: var(--dark-bg);
+        --panel-bg-color: var(--dark-panel);
+        --surface-bg-color: var(--dark-surface);
+        --text-color: var(--text-main-dark);
+        --border-color: var(--border-color-dark);
+        --muted-text-color: var(--muted-text-dark);
+        --input-bg-color: var(--dark-surface);
+      }
+
+      body.light-mode {
+        --bg-color: var(--light-bg);
+        --panel-bg-color: var(--light-panel);
+        --surface-bg-color: var(--light-surface);
+        --text-color: var(--text-main-light);
+        --border-color: var(--border-color-light);
+        --muted-text-color: var(--muted-text-light);
+        --input-bg-color: var(--light-panel);
+      }
+
+      html {
+        overflow-y: auto;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-color);
+        color: var(--text-color);
+        font-size: 14px;
+        line-height: 1.6;
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      .topbar {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        background: var(--panel-bg-color);
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-color);
+        gap: 16px;
+        flex-shrink: 0;
+      }
+      .title {
+        font-weight: 600;
+        font-size: 1.2em;
+        margin-right: auto;
+      }
+      .container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+      .left,
+      .right {
+        padding: 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .left {
+        width: 52%;
+        border-right: 1px solid var(--border-color);
+      }
+      .right {
+        width: 48%;
+        background: var(--surface-bg-color);
+      }
+
+      .section {
+        background: var(--panel-bg-color);
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+      .label {
+        font-size: 0.9em;
+        color: var(--accent);
+        margin-bottom: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .textarea,
+      textarea,
+      input,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        background: var(--input-bg-color);
+        color: var(--text-color);
+        font-size: 14px;
+        font-family: var(--font-mono);
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      textarea:focus,
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(122, 162, 247, 0.25);
+      }
+
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .half {
+        flex: 1;
+      }
+      .btn {
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        font-family: var(--font-sans);
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn:hover {
+        background: var(--accent-hover);
+        color: var(--dark-bg);
+      }
+      .small {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .muted {
+        color: var(--muted-text-color);
+        font-size: 13px;
+      }
+      .jsonBox {
+        font-family: var(--font-mono);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        background: var(--surface-bg-color);
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        font-size: 13px;
+      }
+
+      .jwtParts {
+        font-family: var(--font-mono);
+        color: var(--muted-text-color);
+        margin-top: 8px;
+        font-size: 12px;
+      }
+      .jwtParts .h {
+        color: var(--error);
+      }
+      .jwtParts .p {
+        color: var(--warning);
+      }
+      .jwtParts .s {
+        color: #73daca;
+      }
+
+      .status {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .ok {
+        background: rgba(158, 206, 106, 0.2);
+        color: var(--success);
+      }
+      .bad {
+        background: rgba(247, 118, 142, 0.2);
+        color: var(--error);
+      }
+
+      .countdown {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-color);
+        margin-top: 8px;
+      }
+
+      .footerNote {
+        font-size: 12px;
+        color: var(--muted-text-color);
+        margin-top: 12px;
+      }
+
+      input[type="file"] {
+        font-family: var(--font-sans);
+      }
+      input[type="file"]::file-selector-button {
+        background: var(--panel-bg-color);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        font-weight: 600;
+        margin-right: 12px;
+      }
+      input[type="file"]::file-selector-button:hover {
+        background: var(--surface-bg-color);
+      }
+
+      /* Theme Toggle Button */
+      #theme-toggle-btn {
+        background: none;
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--muted-text-color);
+        padding: 0;
+        transition: color 0.2s, background-color 0.2s;
+      }
+      #theme-toggle-btn:hover {
+        color: var(--text-color);
+        background: var(--surface-bg-color);
+      }
+      #theme-toggle-btn .feather-sun {
+        display: none;
+      }
+      #theme-toggle-btn .feather-moon {
+        display: block;
+      }
+      body.light-mode #theme-toggle-btn .feather-sun {
+        display: block;
+      }
+      body.light-mode #theme-toggle-btn .feather-moon {
+        display: none;
+      }
+
+      /* Toast Notifications */
+      #toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .toast {
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transform: translateY(20px);
+        animation: toast-in 0.3s forwards;
+      }
+      .toast.success {
+        background-color: var(--success);
+      }
+      .toast.error {
+        background-color: var(--error);
+      }
+      .toast.info {
+        background-color: var(--accent);
+        color: var(--accent-text);
+      }
+      @keyframes toast-in {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes toast-out {
+        to {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+      }
+
+      /* Responsive Layout */
+      @media (max-width: 900px) {
+        .container {
+          flex-direction: column;
+          overflow-y: auto;
+        }
+        .left,
+        .right {
+          width: 100%;
+          border-right: none;
+          overflow-y: visible;
+        }
+        .right {
+          border-top: 1px solid var(--border-color);
+        }
+        .topbar {
+          padding: 0 12px;
+        }
+        .topbar .muted {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="title">JWT Studio</div>
+      <div class="muted">
+        브라우저 단독: 키 업로드 → RS/ES 서명 생성 · 검증 · 만료 카운트다운 ·
+        JSON 편집기
+      </div>
+      <button id="theme-toggle-btn" title="Toggle light/dark theme">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="feather-sun"
+        >
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="feather-moon"
+        >
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="container">
+      <!-- LEFT: 입력/편집/키 업로드/생성 -->
+      <div class="left">
+        <div class="section">
+          <div class="label">JWT 입력 / 디코드</div>
+          <textarea
+            id="jwtInput"
+            rows="4"
+            placeholder="여기에 JWT 붙여넣기 (자동 디코드)"
+          >
+          </textarea>
+          <div class="jwtParts">
+            <span class="h">헤더</span> . <span class="p">페이로드</span> .
+            <span class="s">서명</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="label">JSON 편집기 — Header</div>
+          <textarea id="headerEditor" style="width:800px; height:100px;"></textarea>
+        </div>
+
+        <div class="section">
+          <div class="label">JSON 편집기 — Payload</div>
+          <textarea id="payloadEditor" style="width:800px; height:150px;"></textarea>
+              <div class="muted" style="margin-top: 8px">
+            값은 자동으로 타입 추론됩니다(예: true/false, 숫자, JSON 객체는
+            중괄호로 입력).
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="label">Signing / Verification</div>
+
+          <div class="row">
+            <select id="algSelect" class="half">
+              <option value="HS256">HS256</option>
+              <option value="HS384">HS384</option>
+              <option value="HS512">HS512</option>
+              <option value="RS256">RS256</option>
+              <option value="ES256">ES256</option>
+            </select>
+            <input
+              id="kidInput"
+              type="text"
+              placeholder="optional kid (Header에 자동 반영)"
+              class="half"
+            />
+          </div>
+
+          <div style="margin-top: 8px" class="row">
+            <input
+              id="secretInput"
+              type="text"
+              placeholder="HS 계열: secret 입력(브라우저 내 사용)"
+            />
+          </div>
+
+          <div style="margin-top: 8px">
+            <label class="muted">Private Key (서명용):</label>
+            <textarea
+              id="privKeyText"
+              rows="4"
+              placeholder="-----BEGIN PRIVATE KEY-----... (PKCS#8) 또는 개인키 파일 업로드 사용"
+            ></textarea>
+            <div class="row" style="margin-top: 8px">
+              <input id="filePriv" type="file" accept=".pem,.key" />
+              <button id="usePriv" class="btn small">개인키로 서명</button>
+              <button id="exportJwt" class="btn small">JWT 생성(서명)</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 8px">
+            <label class="muted">Public Key (검증용, PEM SPKI)</label>
+            <textarea
+              id="pubKeyText"
+              rows="3"
+              placeholder="-----BEGIN PUBLIC KEY-----..."
+            ></textarea>
+            <div style="margin-top: 8px" class="row">
+              <button id="verifyBtn" class="btn small">서명 검증</button>
+              <div id="verifyResult" style="margin-left: 8px"></div>
+            </div>
+          </div>
+          <div class="footerNote">
+            개인키 업로드는 로컬 브라우저에서만 사용됩니다. 절대 서버 전송하지
+            마세요.
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: 디코드 결과 / exp timeline / generated jwt -->
+      <div class="right">
+        <div class="section">
+          <div class="label">Decoded Header</div>
+          <div id="headerPretty" class="jsonBox"></div>
+        </div>
+
+        <div class="section">
+          <div class="label">Decoded Payload</div>
+          <div id="payloadPretty" class="jsonBox"></div>
+          <div id="expInfo" class="muted"></div>
+          <div id="countdown" class="countdown"></div>
+        </div>
+
+        <div class="section">
+          <div class="label">Signature (base64url)</div>
+          <div id="sigBox" class="jsonBox" style="font-family: monospace"></div>
+        </div>
+
+        <div class="section">
+          <div class="label">생성된 JWT (복사하여 사용)</div>
+          <textarea id="outJwt" rows="3" readonly class="jsonBox"></textarea>
+          <div style="margin-top: 8px" class="row">
+            <button id="copyBtn" class="btn small">복사</button>
+            <button id="clearBtn" class="btn small">지우기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+      /* ------------ 토스트 알림 ------------ */
+      function showToast(message, type = "info", duration = 3000) {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.animation = "toast-out 0.5s forwards";
+          toast.addEventListener("animationend", () => {
+            toast.remove();
+          });
+        }, duration);
+      }
+
+      /* ------------- 유틸리티 함수 ------------- */
+      // HTML 특수 문자를 이스케이프 처리합니다.
+      function escapeHtml(s) {
+        return s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+      // 바이트 배열을 Base64 URL 형식으로 인코딩합니다.
+      function base64UrlEncodeFromBytes(bytes) {
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++)
+          binary += String.fromCharCode(bytes[i]);
+        let b64 = btoa(binary);
+        return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      }
+      // 문자열을 Base64 URL 형식으로 인코딩합니다.
+      function base64UrlEncodeFromStr(s) {
+        return btoa(unescape(encodeURIComponent(s)))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+      // Base64 URL 문자열을 Uint8Array로 디코딩합니다.
+      function base64UrlToUint8Array(base64url) {
+        base64url = base64url.replace(/-/g, "+").replace(/_/g, "/");
+        const pad = base64url.length % 4;
+        if (pad) base64url += "=".repeat(4 - pad);
+        const binary = atob(base64url);
+        const arr = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+        return arr;
+      }
+      // Uint8Array를 16진수 문자열로 변환합니다.
+      function uint8ArrayToHex(bytes) {
+        return Array.from(bytes)
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      }
+      // 문자열을 Uint8Array로 변환합니다.
+      function strToUint8Array(s) {
+        return new TextEncoder().encode(s);
+      }
+
+      /* PEM(개인키/공개키) 문자열을 ArrayBuffer로 변환 */
+      function pemToArrayBuffer(pem) {
+        const b64 = pem
+          .replace(/-----(BEGIN|END)[\w\s]+-----/g, "")
+          .replace(/\s+/g, "");
+        const binary = atob(b64);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes.buffer;
+      }
+
+      /* DER(ECDSA) 시그니처를 raw R||S 형식으로 파싱 (ASN.1 SEQ(INT r)(INT s) 구조) */
+      function derToRS(derBuffer, outLen) {
+        const bytes = new Uint8Array(derBuffer);
+        let idx = 0;
+        if (bytes[idx++] !== 0x30) throw new Error("유효하지 않은 DER 시퀀스");
+        let len = bytes[idx++];
+        if (len & 0x80) {
+          const n = len & 0x7f;
+          len = 0;
+          for (let i = 0; i < n; i++) {
+            len = (len << 8) + bytes[idx++];
+          }
+        }
+        // r 값 파싱
+        if (bytes[idx++] !== 0x02) throw new Error("r을 위한 INTEGER 예상");
+        let rlen = bytes[idx++];
+        if (rlen & 0x80) {
+          const n = rlen & 0x7f;
+          rlen = 0;
+          for (let i = 0; i < n; i++) rlen = (rlen << 8) + bytes[idx++];
+        }
+        let r = bytes.slice(idx, idx + rlen);
+        idx += rlen;
+        // s 값 파싱
+        if (bytes[idx++] !== 0x02) throw new Error("s를 위한 INTEGER 예상");
+        let slen = bytes[idx++];
+        if (slen & 0x80) {
+          const n = slen & 0x7f;
+          slen = 0;
+          for (let i = 0; i < n; i++) slen = (slen << 8) + bytes[idx++];
+        }
+        let s = bytes.slice(idx, idx + slen);
+        // 선행 0 제거 함수
+        function trim(v) {
+          let i = 0;
+          while (i < v.length - 1 && v[i] === 0) i++;
+          return v.slice(i);
+        }
+        r = trim(r);
+        s = trim(s);
+        // 각 구성요소를 outLen에 맞춰 패딩합니다.
+        const rn = new Uint8Array(outLen);
+        rn.set(r, outLen - r.length);
+        const sn = new Uint8Array(outLen);
+        sn.set(s, outLen - s.length);
+        const out = new Uint8Array(outLen * 2);
+        out.set(rn, 0);
+        out.set(sn, outLen);
+        return out;
+      }
+
+      /* ------------ 초기 데이터 설정 ------------ */
+      // JWT 헤더의 초기값을 정의합니다.
+      const initialHeader = { alg: "HS256", typ: "JWT" };
+      // JWT 페이로드의 초기값을 정의합니다. `iat`는 현재 시간으로 자동 설정됩니다.
+      const initialPayload = {
+        sub: "1234567890",
+        name: "Alice",
+        admin: false,
+        iat: Math.floor(Date.now() / 1000), // 현재 시간 자동 입력
+        exp: Math.floor(Date.now() / 1000), // 현재 시간 자동 입력        
+      };
+
+      /* ------------ JWT 디코드 및 렌더링 ------------- */
+      // JSON 객체를 예쁘게 문자열로 만들고 HTML 특수 문자를 이스케이프 처리합니다.
+      function jsonToHtmlPretty(obj) {
+        try {
+          return escapeHtml(JSON.stringify(obj, null, 2));
+        } catch (e) {
+          return escapeHtml(String(obj));
+        }
+      }
+      // JWT 문자열을 디코드하여 헤더, 페이로드, 서명으로 분리합니다.
+      function decodeJwt(jwt) {
+        if (!jwt || jwt.split(".").length !== 3) return null; // JWT 형식이 아니면 null 반환
+        const [h, p, s] = jwt.split("."); // 헤더, 페이로드, 서명 분리
+        let header = null,
+          payload = null;
+        try {
+          // Base64 URL로 인코딩된 헤더를 JSON 객체로 파싱합니다.
+          header = JSON.parse(
+            new TextDecoder().decode(base64UrlToUint8Array(h))
+          );
+        } catch (e) {
+          header = null; // 파싱 오류 시 null
+        }
+        try {
+          // Base64 URL로 인코딩된 페이로드를 JSON 객체로 파싱합니다.
+          payload = JSON.parse(
+            new TextDecoder().decode(base64UrlToUint8Array(p))
+          );
+        } catch (e) {
+          payload = null; // 파싱 오류 시 null
+        }
+        return { header, payload, signature: s, rawParts: [h, p, s] };
+      }
+      // 디코드된 JWT 정보를 화면에 렌더링합니다.
+      function renderDecoded(jwt) {
+        const out = decodeJwt(jwt); // JWT 디코드
+        const headerPretty = document.getElementById("headerPretty"); // 디코드된 헤더 표시 영역
+        const payloadPretty = document.getElementById("payloadPretty"); // 디코드된 페이로드 표시 영역
+        const sigBox = document.getElementById("sigBox"); // 서명 표시 영역
+        const expInfo = document.getElementById("expInfo"); // 만료 시간 정보 표시 영역
+        // 각 영역 초기화
+        headerPretty.innerHTML = "";
+        payloadPretty.innerHTML = "";
+        sigBox.textContent = "";
+        expInfo.textContent = "";
+        if (!out) return; // 디코드 실패 시 반환
+
+        // 디코드된 헤더와 페이로드를 보기 좋게 JSON 형식으로 표시
+        headerPretty.innerHTML = out.header
+          ? jsonToHtmlPretty(out.header)
+          : "<i>유효하지 않은 헤더</i>";
+        payloadPretty.innerHTML = out.payload
+          ? jsonToHtmlPretty(out.payload)
+          : "<i>유효하지 않은 페이로드</i>";
+        sigBox.textContent = out.signature; // 서명 값 표시
+
+        // 편집 가능한 텍스트 영역에 디코드된 내용을 업데이트
+        setJsonToTextarea(headerEditor, out.header || {});
+        setJsonToTextarea(payloadEditor, out.payload || {});
+
+        // 'exp' (만료 시간) 클레임 처리
+        if (out.payload && out.payload.exp !== undefined) {
+          const expSec = Number(out.payload.exp); // 만료 시간을 초 단위로 가져옴
+          const expMs = expSec * 1000; // 밀리초로 변환
+          const expDate = new Date(expMs); // Date 객체 생성
+          expInfo.innerHTML = `exp: ${expSec} → ${expDate.toLocaleString(
+            "ko-KR"
+          )} (KST)`; // 만료 시간 정보 표시
+          startCountdown(expMs); // 카운트다운 시작
+        } else {
+          document.getElementById("countdown").textContent = ""; // 카운트다운 초기화
+          expInfo.textContent = "exp 없음"; // 'exp' 클레임이 없음을 표시
+        }
+      }
+
+      /* 카운트다운 타이머 관련 함수 */
+      let countdownTimer = null; // 카운트다운 타이머 ID
+      // 만료 시간까지 카운트다운을 시작합니다.
+      function startCountdown(expMs) {
+        const el = document.getElementById("countdown"); // 카운트다운을 표시할 요소
+        if (countdownTimer) clearInterval(countdownTimer); // 기존 타이머가 있으면 중지
+        // 1초마다 실행될 카운트다운 로직
+        function tick() {
+          const now = Date.now(); // 현재 시간
+          const diff = expMs - now; // 만료까지 남은 시간 (밀리초)
+          if (diff <= 0) {
+            el.textContent = "만료됨"; // 만료 시 텍스트 변경
+            el.className = "countdown"; // 클래스 변경 (필요 시)
+            clearInterval(countdownTimer); // 타이머 중지
+            return;
+          }
+          // 남은 시간을 일, 시, 분, 초로 계산
+          const s = Math.floor(diff / 1000) % 60;
+          const m = Math.floor(diff / 1000 / 60) % 60;
+          const h = Math.floor(diff / 1000 / 3600) % 24;
+          const d = Math.floor(diff / 1000 / 3600 / 24);
+          el.textContent = `만료까지: ${d}일 ${h}시간 ${m}분 ${s}초`; // 화면에 표시
+        }
+        tick(); // 즉시 실행하여 초기값 표시
+        countdownTimer = setInterval(tick, 1000); // 1초마다 갱신
+      }
+
+      /* ------------ 서명 및 검증 관련 함수 ------------- */
+
+      /* HMAC 서명 (Uint8Array 형태의 서명 반환) */
+      async function hmacSign(hashName, secret, signingInput) {
+        // 비밀 키를 가져와 HMAC 서명에 사용할 수 있도록 준비합니다.
+        const key = await crypto.subtle.importKey(
+          "raw", // 원시 키 형식
+          strToUint8Array(secret), // 비밀을 Uint8Array로 변환
+          { name: "HMAC", hash: { name: hashName } }, // HMAC 알고리즘 및 해시 함수 지정
+          false, // 추출 불가능 설정
+          ["sign"] // 서명 용도로만 사용
+        );
+        // 지정된 입력에 대해 HMAC 서명을 생성합니다.
+        const sig = await crypto.subtle.sign(
+          "HMAC", // HMAC 알고리즘
+          key, // 서명 키
+          strToUint8Array(signingInput) // 서명할 입력 데이터
+        );
+        return new Uint8Array(sig); // 생성된 서명을 Uint8Array로 반환
+      }
+
+      /* 개인키 PEM (PKCS#8)을 사용하여 RSA/EC 서명 */
+      async function importPrivateKey(pkPem, alg) {
+        const buf = pemToArrayBuffer(pkPem); // PEM 문자열을 ArrayBuffer로 변환
+        if (alg === "RS256") {
+          // RS256 알고리즘용 개인키 가져오기
+          return await crypto.subtle.importKey(
+            "pkcs8", // PKCS#8 형식
+            buf, // 키 데이터
+            { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, // RSA-PSS 알고리즘 및 해시 함수
+            false, // 추출 불가능
+            ["sign"] // 서명 용도로만 사용
+          );
+        } else if (alg === "ES256") {
+          // ES256 알고리즘용 개인키 가져오기
+          return await crypto.subtle.importKey(
+            "pkcs8", // PKCS#8 형식
+            buf, // 키 데이터
+            { name: "ECDSA", namedCurve: "P-256" }, // ECDSA 알고리즘 및 곡선
+            false, // 추출 불가능
+            ["sign"] // 서명 용도로만 사용
+          );
+        } else {
+          throw new Error("지원하지 않는 개인키 알고리즘");
+        }
+      }
+
+      /* CryptoKey 형태의 개인키로 서명 */
+      async function privateSign(privateKeyCryptoKey, alg, signingInput) {
+        if (alg === "RS256") {
+          // RS256 서명 생성
+          const sig = await crypto.subtle.sign(
+            { name: "RSASSA-PKCS1-v1_5" }, // RSA-PSS 알고리즘
+            privateKeyCryptoKey, // 개인키
+            strToUint8Array(signingInput) // 서명할 입력 데이터
+          );
+          return new Uint8Array(sig); // 원시 서명 바이트 반환
+        } else if (alg === "ES256") {
+          // ECDSA 서명 생성: DER 형식의 서명 반환 -> raw R||S로 변환
+          const der = await crypto.subtle.sign(
+            { name: "ECDSA", hash: "SHA-256" }, // ECDSA 알고리즘 및 해시 함수
+            privateKeyCryptoKey, // 개인키
+            strToUint8Array(signingInput) // 서명할 입력 데이터
+          );
+          const raw = derToRS(der, 32); // P-256은 구성 요소당 32바이트
+          return raw;
+        } else {
+          throw new Error("지원하지 않는 개인키 알고리즘");
+        }
+      }
+
+      /* JWT 검증 헬퍼 함수 */
+      async function verifyJwt(jwt, alg, opts) {
+        // opts: 비밀키 또는 공개키 PEM
+        try {
+          const parts = jwt.split(".");
+          if (parts.length !== 3)
+            return { ok: false, reason: "유효하지 않은 JWT 형식" };
+          const signingInput = parts[0] + "." + parts[1]; // 서명에 사용된 입력 (헤더 + 페이로드)
+          const sigB64 = parts[2]; // JWT의 서명 부분 (Base64 URL)
+          if (alg.startsWith("HS")) {
+            // HMAC 서명 검증
+            if (!opts.secret) return { ok: false, reason: "비밀키 필요" };
+            const hash =
+              alg === "HS256"
+                ? "SHA-256"
+                : alg === "HS384"
+                ? "SHA-384"
+                : "SHA-512";
+            const sigBytes = await hmacSign(hash, opts.secret, signingInput); // 입력과 비밀키로 서명 재생성
+            const expected = base64UrlEncodeFromBytes(sigBytes); // 재생성된 서명을 Base64 URL로 인코딩
+            return { ok: expected === sigB64, expected, actual: sigB64 }; // 원본 서명과 비교
+          } else if (alg === "RS256") {
+            // RS256 서명 검증
+            if (!opts.publicKeyPem) return { ok: false, reason: "공개키 필요" };
+            const pubBuf = pemToArrayBuffer(opts.publicKeyPem); // 공개키 PEM을 ArrayBuffer로 변환
+            const pubKey = await crypto.subtle.importKey(
+              "spki", // SPKI 형식
+              pubBuf, // 공개키 데이터
+              { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, // RSA-PSS 알고리즘 및 해시 함수
+              false, // 추출 불가능
+              ["verify"] // 검증 용도로만 사용
+            );
+            const sig = base64UrlToUint8Array(sigB64); // Base64 URL 서명을 Uint8Array로 변환
+            const ok = await crypto.subtle.verify(
+              { name: "RSASSA-PKCS1-v1_5" }, // RSA-PSS 알고리즘
+              pubKey, // 공개키
+              sig, // 서명
+              strToUint8Array(signingInput) // 원본 입력 데이터
+            );
+            return { ok };
+          } else if (alg === "ES256") {
+            // ES256 서명 검증
+            if (!opts.publicKeyPem) return { ok: false, reason: "공개키 필요" };
+            const pubBuf = pemToArrayBuffer(opts.publicKeyPem); // 공개키 PEM을 ArrayBuffer로 변환
+            const pubKey = await crypto.subtle.importKey(
+              "spki", // SPKI 형식
+              pubBuf, // 공개키 데이터
+              { name: "ECDSA", namedCurve: "P-256" }, // ECDSA 알고리즘 및 곡선
+              false, // 추출 불가능
+              ["verify"] // 검증 용도로만 사용
+            );
+            const rawSig = base64UrlToUint8Array(sigB64); // raw R||S 형식의 서명
+            const derSig = rsToDer(rawSig); // 검증을 위해 DER 형식으로 변환
+            const ok = await crypto.subtle.verify(
+              { name: "ECDSA", hash: "SHA-256" }, // ECDSA 알고리즘 및 해시 함수
+              pubKey, // 공개키
+              derSig, // DER 형식의 서명
+              strToUint8Array(signingInput) // 원본 입력 데이터
+            );
+            return { ok };
+          } else {
+            return { ok: false, reason: "지원되지 않는 알고리즘" };
+          }
+        } catch (e) {
+          return { ok: false, reason: e && e.message ? e.message : String(e) };
+        }
+      }
+
+      /* RS raw -> DER 변환기 (검증용) */
+      function rsToDer(raw) {
+        // raw는 길이가 2n인 Uint8Array
+        const half = raw.length / 2;
+        const r = raw.slice(0, half); // R 부분
+        const s = raw.slice(half); // S 부분
+        // 선행 0을 제거하는 함수
+        function stripLeading(b) {
+          let i = 0;
+          while (i < b.length - 1 && b[i] === 0) i++;
+          return b.slice(i);
+        }
+        const r2 = stripLeading(r);
+        const s2 = stripLeading(s);
+        // 최상위 비트가 설정된 경우 0x00을 접두사로 추가
+        function intBuf(x) {
+          if (x[0] & 0x80) {
+            const out = new Uint8Array(x.length + 1);
+            out[0] = 0;
+            out.set(x, 1);
+            return out;
+          }
+          return x;
+        }
+        const ri = intBuf(r2);
+        const si = intBuf(s2);
+        // R 값 인코딩
+        const rEnc = new Uint8Array(2 + ri.length);
+        rEnc[0] = 0x02; // INTEGER 타입
+        rEnc[1] = ri.length; // 길이
+        rEnc.set(ri, 2);
+        // S 값 인코딩
+        const sEnc = new Uint8Array(2 + si.length);
+        sEnc[0] = 0x02; // INTEGER 타입
+        sEnc[1] = si.length; // 길이
+        sEnc.set(si, 2);
+        const seqLen = rEnc.length + sEnc.length; // 시퀀스 길이
+        let seqLenEnc;
+        if (seqLen < 0x80) seqLenEnc = new Uint8Array([seqLen]);
+        else {
+          const hex = seqLen.toString(16);
+          const n = Math.ceil(hex.length / 2);
+          seqLenEnc = new Uint8Array(1 + n);
+          seqLenEnc[0] = 0x80 | n;
+          for (let i = 0; i < n; i++) {
+            seqLenEnc[1 + n - 1 - i] = parseInt(
+              hex.slice(-2 * (i + 1), hex.length - 2 * i) || "00",
+              16
+            );
+          }
+        }
+        // 최종 DER 시퀀스 구성
+        const out = new Uint8Array(1 + seqLenEnc.length + seqLen);
+        out[0] = 0x30; // SEQUENCE 타입
+        out.set(seqLenEnc, 1);
+        out.set(rEnc, 1 + seqLenEnc.length);
+        out.set(sEnc, 1 + seqLenEnc.length + rEnc.length);
+        return out.buffer;
+      }
+
+      /* ------------ UI 요소 연결 및 이벤트 처리 ------------- */
+      // 각 UI 요소에 해당하는 DOM 엘리먼트를 가져옵니다.
+      const jwtInput = document.getElementById("jwtInput"); // JWT 입력 필드
+      const headerEditor = document.getElementById("headerEditor"); // 헤더 JSON 편집기 (textarea)
+      const payloadEditor = document.getElementById("payloadEditor"); // 페이로드 JSON 편집기 (textarea)
+      const outJwt = document.getElementById("outJwt"); // 생성된 JWT 출력 필드
+      const algSelect = document.getElementById("algSelect"); // 서명 알고리즘 선택
+      const secretInput = document.getElementById("secretInput"); // HS 계열 시크릿 입력 필드
+      const pubKeyText = document.getElementById("pubKeyText"); // 공개키 텍스트 영역
+      const privKeyText = document.getElementById("privKeyText"); // 개인키 텍스트 영역
+      const filePriv = document.getElementById("filePriv"); // 개인키 파일 업로드
+      const usePriv = document.getElementById("usePriv"); // 개인키 사용 버튼
+      const exportJwt = document.getElementById("exportJwt"); // JWT 생성(서명) 버튼
+      const verifyBtn = document.getElementById("verifyBtn"); // 서명 검증 버튼
+      const verifyResult = document.getElementById("verifyResult"); // 검증 결과 표시 영역
+      const copyBtn = document.getElementById("copyBtn"); // 복사 버튼
+      const clearBtn = document.getElementById("clearBtn"); // 지우기 버튼
+      const kidInput = document.getElementById("kidInput"); // kid 입력 필드
+
+      // JSON 텍스트 영역을 위한 헬퍼 함수
+      // 텍스트 영역에서 JSON을 파싱하여 객체로 반환합니다. 파싱 실패 시 경고를 표시합니다.
+      function getJsonFromTextarea(textareaElement) {
+        try {
+          return JSON.parse(textareaElement.value);
+        } catch (e) {
+          showToast("JSON 파싱 오류: " + e.message, "error");
+          return null;
+        }
+      }
+
+      // 객체를 JSON 문자열로 변환하여 텍스트 영역에 설정합니다.
+      function setJsonToTextarea(textareaElement, obj) {
+        textareaElement.value = JSON.stringify(obj, null, 2);
+      }
+
+      // JWT 입력 필드 변경 시 이벤트 리스너
+      jwtInput.addEventListener("input", () => {
+        renderDecoded(jwtInput.value.trim()); // 입력된 JWT 디코드 및 렌더링
+      });
+
+      // 개인키 파일 선택 시 이벤트 리스너
+      filePriv.addEventListener("change", (ev) => {
+        const f = ev.target.files[0]; // 선택된 파일 가져오기
+        if (!f) return;
+        const reader = new FileReader(); // 파일 리더 생성
+        reader.onload = (e) => {
+          privKeyText.value = e.target.result; // 파일 내용을 개인키 텍스트 영역에 로드
+        };
+        reader.readAsText(f); // 파일을 텍스트로 읽기
+      });
+
+      // 개인키 사용 버튼 클릭 시 이벤트 리스너
+      usePriv.addEventListener("click", async () => {
+        const alg = algSelect.value; // 선택된 알고리즘
+        const pkPem = privKeyText.value.trim(); // 개인키 PEM 값
+        if (!pkPem) {
+          showToast(
+            "개인키(PKCS#8 PEM)를 붙여넣거나 파일 업로드하세요.",
+            "error"
+          );
+          return;
+        }
+        try {
+          // 개인키를 가져와 CryptoKey 객체로 변환
+          const key = await importPrivateKey(
+            pkPem,
+            alg === "RS256" ? "RS256" : "ES256"
+          );
+          showToast(
+            '개인키 로드 완료. "JWT 생성(서명)"을 눌러 서명 생성 가능.',
+            "success"
+          );
+          // 현재 페이지 인스턴스에 로드된 개인키 저장
+          window._loadedPrivateKey = key;
+        } catch (e) {
+          showToast("개인키 로드 실패: " + e.message, "error");
+        }
+      });
+
+      // JWT 생성(서명) 버튼 클릭 시 이벤트 리스너
+      exportJwt.addEventListener("click", async () => {
+        try {
+          // 헤더 및 페이로드 편집기에서 JSON 객체 가져오기
+          const headerObj = getJsonFromTextarea(headerEditor);
+          const payloadObj = getJsonFromTextarea(payloadEditor);
+
+          if (!headerObj || !payloadObj) return; // 파싱 실패 시 종료
+
+          // 선택적 kid (키 ID) 처리
+          const kid = kidInput.value.trim();
+          if (kid) headerObj.kid = kid;
+          // 선택된 알고리즘을 헤더에 반영
+          headerObj.alg = algSelect.value;
+          // 업데이트된 헤더 및 페이로드 내용을 다시 편집기에 표시
+          setJsonToTextarea(headerEditor, headerObj);
+          setJsonToTextarea(payloadEditor, payloadObj);
+
+          // 헤더와 페이로드를 Base64 URL로 인코딩
+          const headerB64 = base64UrlEncodeFromStr(JSON.stringify(headerObj));
+          const payloadB64 = base64UrlEncodeFromStr(JSON.stringify(payloadObj));
+          const signingInput = headerB64 + "." + payloadB64; // 서명에 사용될 입력
+          const alg = algSelect.value; // 선택된 알고리즘
+
+          let sigBytes;
+          if (alg.startsWith("HS")) {
+            const secret = secretInput.value; // 시크릿 키 가져오기
+            if (!secret) {
+              showToast("HS계열 서명용 Secret을 입력하세요.", "error");
+              return;
+            }
+            // 해시 알고리즘 결정
+            const hash =
+              alg === "HS256"
+                ? "SHA-256"
+                : alg === "HS384"
+                ? "SHA-384"
+                : "SHA-512";
+            sigBytes = await hmacSign(hash, secret, signingInput); // HMAC 서명 생성
+          } else if (alg === "RS256" || alg === "ES256") {
+            // 로드된 개인키 CryptoKey가 없으면 텍스트 영역에서 가져오기 시도
+            let privKey = window._loadedPrivateKey;
+            if (!privKey) {
+              const pem = privKeyText.value.trim();
+              if (!pem) {
+                showToast(
+                  "개인키(PKCS#8 PEM)를 붙여넣거나 업로드하세요.",
+                  "error"
+                );
+                return;
+              }
+              privKey = await importPrivateKey(
+                pem,
+                alg === "RS256" ? "RS256" : "ES256"
+              );
+              window._loadedPrivateKey = privKey; // 로드된 개인키 저장
+            }
+            const rawSig = await privateSign(privKey, alg, signingInput); // 개인키로 서명 (Uint8Array)
+            sigBytes = rawSig;
+          } else {
+            showToast("지원하지 않는 알고리즘", "error");
+            return;
+          }
+
+          const sigB64 = base64UrlEncodeFromBytes(sigBytes); // 서명 바이트를 Base64 URL로 인코딩
+          const jwt = signingInput + "." + sigB64; // 최종 JWT 생성
+          outJwt.value = jwt; // 생성된 JWT 출력
+          jwtInput.value = jwt; // 입력 필드에도 설정하여 디코드된 내용 표시
+          renderDecoded(jwt); // JWT 디코드 및 렌더링
+          verifyResult.innerHTML = ""; // 검증 결과 초기화
+          showToast("JWT 생성 성공!", "success");
+        } catch (e) {
+          showToast(
+            "JWT 생성 오류: " + (e && e.message ? e.message : String(e)),
+            "error"
+          );
+        }
+      });
+
+      // 서명 검증 버튼 클릭 시 이벤트 리스너
+      verifyBtn.addEventListener("click", async () => {
+        const jwt = jwtInput.value.trim() || outJwt.value.trim(); // JWT 가져오기
+        const alg = algSelect.value; // 선택된 알고리즘
+        verifyResult.innerHTML = '<span class="muted">검증중...</span>'; // 검증 중 메시지 표시
+        if (!jwt) {
+          verifyResult.innerHTML = '<span class="bad status">JWT 없음</span>'; // JWT가 없으면 오류 표시
+          return;
+        }
+        try {
+          let res;
+          if (alg.startsWith("HS")) {
+            // HMAC 서명 검증
+            res = await verifyJwt(jwt, alg, { secret: secretInput.value });
+          } else {
+            // 비대칭 키 서명 검증 (공개키 사용)
+            res = await verifyJwt(jwt, alg, {
+              publicKeyPem: pubKeyText.value.trim(),
+            });
+          }
+          if (res.ok)
+            verifyResult.innerHTML =
+              '<span class="ok status">서명 검증 성공</span>';
+          // 성공 메시지
+          else
+            verifyResult.innerHTML = `<span class="bad status">검증 실패: ${escapeHtml(
+              res.reason || "서명 불일치"
+            )}</span>`; // 실패 메시지
+        } catch (e) {
+          verifyResult.innerHTML = `<span class="bad status">검증 중 오류: ${escapeHtml(
+            e.message || String(e)
+          )}</span>`; // 오류 메시지
+        }
+      });
+
+      // 복사 버튼 클릭 시 이벤트 리스너
+      copyBtn.addEventListener("click", () => {
+        const v = outJwt.value.trim(); // 출력 JWT 값
+        if (!v) {
+          showToast("복사할 JWT가 없습니다", "error");
+          return;
+        }
+        navigator.clipboard
+          .writeText(v) // 클립보드에 복사
+          .then(() => showToast("JWT가 클립보드에 복사되었습니다", "info"));
+      });
+
+      // 지우기 버튼 클릭 시 이벤트 리스너
+      clearBtn.addEventListener("click", () => {
+        outJwt.value = ""; // 출력 JWT 필드 초기화
+        jwtInput.value = ""; // 입력 JWT 필드 초기화
+        document.getElementById("headerPretty").innerHTML = ""; // 디코드된 헤더 표시 초기화
+        document.getElementById("payloadPretty").innerHTML = ""; // 디코드된 페이로드 표시 초기화
+        document.getElementById("sigBox").textContent = ""; // 서명 표시 초기화
+        document.getElementById("verifyResult").innerHTML = ""; // 검증 결과 초기화
+        if (countdownTimer) clearInterval(countdownTimer); // 카운트다운 타이머 중지
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        /* ------------ Theme Toggle ------------ */
+        const themeToggleBtn = document.getElementById("theme-toggle-btn");
+
+        function applyTheme(theme) {
+          if (theme === "light") {
+            document.body.classList.add("light-mode");
+          } else {
+            document.body.classList.remove("light-mode");
+          }
+        }
+
+        themeToggleBtn.addEventListener("click", () => {
+          const isLight = document.body.classList.contains("light-mode");
+          if (isLight) {
+            localStorage.setItem("jwt-studio-theme", "dark");
+            applyTheme("dark");
+          } else {
+            localStorage.setItem("jwt-studio-theme", "light");
+            applyTheme("light");
+          }
+        });
+
+        const savedTheme = localStorage.getItem("jwt-studio-theme");
+        const systemPrefersDark =
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+        if (savedTheme) {
+          applyTheme(savedTheme);
+        } else if (systemPrefersDark) {
+          applyTheme("dark");
+        } else {
+          applyTheme("light");
+        }
+
+        // 페이지 로드 시 초기 JSON으로 텍스트 영역을 초기화합니다.
+        setJsonToTextarea(headerEditor, initialHeader);
+        setJsonToTextarea(payloadEditor, initialPayload);
+
+        /* 페이지 시작 시, 초기 JWT가 있으면 렌더링합니다. */
+        renderDecoded(jwtInput.value.trim());
+      });
+    </script>
+  </body>
+</html>
