@@ -24,8 +24,7 @@
       margin: 0;
       padding: 0;
       background-color: var(--paper-bg);
-      /* 미세한 종이 질감을 위한 노이즈 패턴 (데이터 URI) */
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3能源%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      /* 노이즈 배경은 아래 스크립트에서 동적으로 설정됩니다. */
       background-blend-mode: multiply;
       opacity: 0.98;
       color: var(--ink-black);
@@ -49,11 +48,13 @@
     .site-wrapper.show-all {
       flex-direction: row;
       flex-wrap: wrap;
-      max-width: 1100px;
+      max-width: 95%;
     }
 
     .site-wrapper.show-all .site-card {
-      flex: 1 1 calc(50% - 24px);
+      flex: 1 1 calc(25% - 24px);
+      display: flex;
+      flex-direction: column;
     }
 
     /* =======================
@@ -193,12 +194,35 @@
 <body>
 
     <main class="site-wrapper">
+
+        <section class="site-card">
+            <h3>환경설정</h3>
+            <p>코딩 필수 링크</p>
+            <ul class="link-list">
+                <li><a class="link-button" href="https://www.google.com"    target="_blank">구글 검색</a></li>
+                <li><a class="link-button" href="https://github.com"        target="_blank">GitHub 저장소</a></li>
+                <li><a class="link-button" href="https://stackoverflow.com" target="_blank">스택 오버플로우</a></li>
+            </ul>
+            <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
+        </section>      
+      
+        <section class="site-card">
+            <h3>환경설정</h3>
+            <p>코딩 필수 링크</p>
+            <ul class="link-list">
+                <li><a class="link-button" href="https://www.google.com"    target="_blank">구글 검색</a></li>
+                <li><a class="link-button" href="https://github.com"        target="_blank">GitHub 저장소</a></li>
+                <li><a class="link-button" href="https://stackoverflow.com" target="_blank">스택 오버플로우</a></li>
+            </ul>
+            <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
+        </section>
+
         <section class="site-card">
             <h3>개발</h3>
             <p>코딩 필수 링크</p>
             <ul class="link-list">
-                <li><a class="link-button" href="https://www.google.com" target="_blank">구글 검색</a></li>
-                <li><a class="link-button" href="https://github.com" target="_blank">GitHub 저장소</a></li>
+                <li><a class="link-button" href="https://www.google.com"    target="_blank">구글 검색</a></li>
+                <li><a class="link-button" href="https://github.com"        target="_blank">GitHub 저장소</a></li>
                 <li><a class="link-button" href="https://stackoverflow.com" target="_blank">스택 오버플로우</a></li>
             </ul>
             <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
@@ -209,8 +233,8 @@
             <p>분석 및 테스트 도구</p>
             <ul class="link-list">
                 <li><a class="link-button" href="https://www.sonarqube.org/" target="_blank">SonarQube</a></li>
-                <li><a class="link-button" href="https://www.jenkins.io/" target="_blank">Jenkins CI</a></li>
-                <li><a class="link-button" href="https://snyk.io/" target="_blank">Snyk Security</a></li>
+                <li><a class="link-button" href="https://www.jenkins.io/"    target="_blank">Jenkins CI</a></li>
+                <li><a class="link-button" href="https://snyk.io/"           target="_blank">Snyk Security</a></li>
             </ul>
             <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
         </section>
@@ -219,8 +243,8 @@
             <h3>운영</h3>
             <p>모니터링 및 인프라</p>
             <ul class="link-list">
-                <li><a class="link-button" href="https://grafana.com/" target="_blank">Grafana 대시보드</a></li>
-                <li><a class="link-button" href="https://aws.amazon.com/" target="_blank">AWS 콘솔</a></li>
+                <li><a class="link-button" href="https://grafana.com/"       target="_blank">Grafana 대시보드</a></li>
+                <li><a class="link-button" href="https://aws.amazon.com/"    target="_blank">AWS 콘솔</a></li>
                 <li><a class="link-button" href="https://www.datadoghq.com/" target="_blank">Datadog</a></li>
             </ul>
             <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
@@ -234,6 +258,27 @@
     </nav>
 
     <script>
+        // SVG 노이즈 배경을 Base64로 인코딩하여 동적 적용
+        // CSS에서 직접 URL 인코딩하는 것보다 가독성과 유지보수성이 좋습니다.
+        (function() {
+          // 1. 공백을 최소화하여 인코딩 크기 축소 (저사양 기기 메모리 배려)
+          const svgNoise = `<svg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'>
+                            <filter id='n'> <feTurbulence  type='fractalNoise' baseFrequency='0.7' /> </filter>
+                            <rect width='100%' height='100%' filter='url(#n)' opacity='0.05' />
+                            </svg>`;
+
+          // 2. Base64 인코딩
+          const encodedData = btoa(svgNoise);
+          
+          // 3. 스타일 객체를 사용하여 한 번에 적용 (리플로우 방지)
+          Object.assign(document.body.style, {
+            backgroundImage: `url("data:image/svg+xml;base64,${encodedData}")`,
+            backgroundRepeat: "repeat",
+            backgroundAttachment: "fixed", // 스크롤 시에도 질감이 고정되어 실제 종이 느낌 부여
+            backgroundColor: "#fdfdfd"     // 백라이트가 꺼진 킨들의 미색(Warm White) 구현
+          });
+        })();
+
         (function() {
           // DOM 요소 참조
           const cards = Array.from(document.querySelectorAll('.site-card'));
