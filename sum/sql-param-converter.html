@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>SQL 파라미터 상호 변환기</title>
+<style>
+  body { font-family: "Segoe UI", sans-serif; margin: 20px; background:#f9f9f9; color:#222; }
+  h2 { color:#333; }
+  textarea {
+    width: 100%; height: 120px; margin: 8px 0;
+    padding: 8px; font-family: monospace;
+    border: 1px solid #ccc; border-radius: 4px;
+    background: #fff;
+  }
+  button {
+    padding: 8px 14px; margin-right: 8px;
+    cursor: pointer; border: none; border-radius: 4px;
+    background: #0078d7; color: white;
+  }
+  button:hover { background: #005fa3; }
+  #copyBtn { background: #4caf50; }
+  #copyBtn:hover { background: #3e8e41; }
+  #status { font-size: 0.9em; color:#555; margin-top:6px; }
+</style>
+</head>
+<body>
+  <h2>SQL 파라미터 상호 변환기 (:param ↔ #{param})</h2>
+
+  <label>입력 텍스트</label>
+  <textarea id="inputText">SELECT * FROM users WHERE id = :userId AND name = #{userName};</textarea>
+
+  <div>
+    <button onclick="convert()">변환 (자동 방향 감지)</button>
+    <button onclick="copyOutput()" id="copyBtn">복사</button>
+    <button onclick="clearText()">초기화</button>
+  </div>
+
+  <label>출력 결과</label>
+  <textarea id="outputText" readonly></textarea>
+
+  <div id="status"></div>
+
+<script>
+function convert() {
+  const input = document.getElementById('inputText').value.trim();
+  let output = "";
+  let direction = "";
+
+  if (input.includes(':') && !input.includes('#{')) {
+    // :param → #{param}
+    output = input.replace(/:([A-Za-z0-9_]+)/g, '#{$1}');
+    direction = ":param → #{param}";
+  } else if (input.includes('#{')) {
+    // #{param} → :param
+    output = input.replace(/\#\{([A-Za-z0-9_]+)\}/g, ':$1');
+    direction = "#{param} → :param";
+  } else {
+    output = input;
+    direction = "변환할 패턴이 없습니다.";
+  }
+
+  document.getElementById('outputText').value = output;
+  document.getElementById('status').textContent = "✅ 변환 방향: " + direction;
+}
+
+function copyOutput() {
+  const text = document.getElementById('outputText').value;
+  if (!text) {
+    alert("복사할 내용이 없습니다.");
+    return;
+  }
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      document.getElementById('status').textContent = "📋 복사 완료!";
+    })
+    .catch(() => {
+      alert("복사 실패! 브라우저 권한을 확인하세요.");
+    });
+}
+
+function clearText() {
+  document.getElementById('inputText').value = '';
+  document.getElementById('outputText').value = '';
+  document.getElementById('status').textContent = '';
+}
+</script>
+</body>
+</html>

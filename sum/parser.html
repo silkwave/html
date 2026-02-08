@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>JSON 기반 전문 분석기</title>
+<style>
+  :root {
+    font-family: Inter, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+  }
+  body {
+    margin: 0; padding: 18px; background: #f6f8fa; color: #111;
+  }
+  h1 {
+    font-size: 20px; margin-bottom: 12px;
+  }
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .panel {
+    background: #fff;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 1px 0 rgba(9,30,66,.04);
+  }
+  textarea {
+    width: 100%;
+    height: 320px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 13px;
+    border: 1px solid #dfe7ec;
+    border-radius: 6px;
+    resize: vertical;
+  }
+  button {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 0;
+    background: #0366d6;
+    color: #fff;
+    cursor: pointer;
+  }
+  button.clear {
+    background: #888;
+  }
+  .muted {
+    color: #556;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    border-bottom: 1px solid #eef2f5;
+    padding: 8px;
+    text-align: left;
+  }
+  th {
+    background: #fbfcfd;
+    font-weight: 600;
+  }
+  .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .tree {
+    font-family: monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    overflow: auto;
+    max-height: 320px;
+  }
+  .small {
+    font-size: 12px;
+    color: #666;
+  }
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  input[type=text] {
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    width: 160px;
+  }
+  button.export-csv {
+    background: #22a699;
+  }
+  button.export-json {
+    background: #6f42c1;
+  }
+  button.copy {
+    background: #444;
+  }
+  .excelHint {
+    font-size: 12px;
+    color: #999;
+    margin-top: 6px;
+    font-style: italic;
+  }
+  #parseError {
+    margin-top: 8px;
+    color: #a33;
+  }
+</style>
+</head>
+<body>
+  <h1>플랫 테이블 미리보기</h1>
+  <p class="muted">
+    JSON을 붙여넣고 <strong>파싱</strong>을 누르세요.<br />
+    플랫 테이블 미리보기, JSON 입력, CSV 내보내기만 지원합니다.
+  </p>
+
+  <div class="container">
+    <section class="panel">
+      <strong>JSON 입력</strong>
+      <textarea id="jsonInput" aria-label="JSON 입력창" spellcheck="false">{
+  "사용자": [
+    {"id": 1, "이름": "홍길동", "나이": 30},
+    {"id": 2, "이름": "김철수", "나이": 25}
+  ],
+  "메타": {
+    "총건수": 2,
+    "상태": "성공"
+  }
+}</textarea>
+      <div class="controls">
+        <button id="parseBtn">파싱</button>
+        <button id="clearBtn" class="clear">지우기</button>
+        <span class="small" style="margin-left: 8px;">에러가 발생하면 아래에 표시됩니다.</span>
+      </div>
+      <div id="parseError" class="small" role="alert" aria-live="assertive"></div>
+    </section>
+
+    <section class="panel">
+      <strong>플랫 테이블 미리보기</strong>
+      <div style="margin-top: 8px; overflow: auto; max-height: 260px;">
+        <table id="tableView" aria-label="JSON 플랫 테이블">
+          <thead>
+            <tr><th>#</th><th>path</th><th>key</th><th>type</th><th>value</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button id="exportCsv" class="export-csv">CSV 내보내기</button>
+      </div>
+      <div class="excelHint">
+        * 엑셀에서 CSV 파일 한글이 깨질 경우, '데이터 탭 → 텍스트/CSV에서 가져오기' 기능을 사용해 UTF-8 인코딩을 선택하세요.
+      </div>
+    </section>
+  </div>
+
+<script>
+(() => {
+  const dom = {
+    jsonInput: document.getElementById('jsonInput'),
+    parseBtn: document.getElementById('parseBtn'),
+    clearBtn: document.getElementById('clearBtn'),
+    parseError: document.getElementById('parseError'),
+    tableBody: document.querySelector('#tableView tbody'),
+    exportCsv: document.getElementById('exportCsv'),
+  };
+
+  function detectType(val) {
+    if (val === null) return 'null';
+    if (Array.isArray(val)) return 'array';
+    return typeof val;
+  }
+
+  // JSON을 플랫 테이블로 변환
+  function flattenJson(obj) {
+    const rows = [];
+    let idCounter = 1;
+    function walk(node, path = '', parentId = '') {
+      const type = detectType(node);
+      const id = idCounter++;
+      if (type === 'object') {
+        rows.push({ id, parentId, path: path || '(root)', key: '(object)', type, value: '' });
+        Object.entries(node).forEach(([k, v]) => {
+          walk(v, path ? `${path}.${k}` : k, id);
+        });
+      } else if (type === 'array') {
+        rows.push({ id, parentId, path: path || '(root)', key: '(array)', type, value: `len=${node.length}` });
+        node.forEach((el, i) => {
+          walk(el, `${path}[${i}]`, id);
+        });
+      } else {
+        rows.push({
+          id,
+          parentId,
+          path: path || '(root)',
+          key: path.split('.').pop() || path,
+          type,
+          value: String(node),
+        });
+      }
+    }
+    walk(obj, '', '');
+    return rows;
+  }
+
+  // HTML 이스케이프
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // 테이블 렌더링
+  function renderRows(rows) {
+    dom.tableBody.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+    rows.forEach((r, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td title="${escapeHtml(r.path)}">${escapeHtml(r.path)}</td>
+        <td>${escapeHtml(r.key)}</td>
+        <td>${escapeHtml(r.type)}</td>
+        <td title="${escapeHtml(r.value)}">${escapeHtml(r.value)}</td>
+      `;
+      fragment.appendChild(tr);
+    });
+    dom.tableBody.appendChild(fragment);
+  }
+
+  // CSV 변환
+  function rowsToCsv(rows) {
+    const headers = ['id','parentId','path','key','type','value'];
+    const escapeCsv = v => `"${String(v).replace(/"/g, '""')}"`;
+    const lines = [headers.join(',')];
+    rows.forEach(r => {
+      lines.push(headers.map(h => escapeCsv(r[h])).join(','));
+    });
+    return lines.join('\n');
+  }
+
+  // 입력/결과 초기화
+  function clearAll() {
+    dom.jsonInput.value = '';
+    dom.tableBody.innerHTML = '';
+    dom.parseError.textContent = '';
+    window.__lastRows = null;
+  }
+
+  // 파싱 및 테이블 렌더링
+  function parseAndRender() {
+    dom.parseError.textContent = '';
+    const raw = dom.jsonInput.value.trim();
+    if (!raw) {
+      dom.parseError.textContent = 'JSON을 입력하세요.';
+      dom.tableBody.innerHTML = '';
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      const rows = flattenJson(parsed);
+      renderRows(rows);
+      window.__lastRows = rows;
+    } catch (err) {
+      dom.parseError.textContent = `파싱 오류: ${err.message}`;
+      dom.tableBody.innerHTML = '';
+    }
+  }
+
+  // CSV 다운로드
+  function downloadCsv() {
+    const rows = window.__lastRows;
+    if (!rows || rows.length === 0) {
+      alert('먼저 파싱하세요.');
+      return;
+    }
+    const csv = rowsToCsv(rows);
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'json_rows.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // 이벤트 바인딩
+  dom.parseBtn.addEventListener('click', parseAndRender);
+  dom.clearBtn.addEventListener('click', clearAll);
+  dom.exportCsv.addEventListener('click', downloadCsv);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>TextDecoder 인코딩 지원 검사</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+        background: #0f1720;
+        color: #e6eef6;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px;
+      }
+      h2 {
+        margin-bottom: 12px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        width: 100%;
+        max-width: 400px;
+      }
+      li {
+        padding: 8px 12px;
+        margin-bottom: 6px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .ok {
+        color: #38c172;
+        font-weight: bold;
+      }
+      .partial {
+        color: #f59e0b;
+        font-weight: bold;
+      }
+      .no {
+        color: #ef4444;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>TextDecoder 인코딩 지원 검사</h2>
+    <ul id="result"></ul>
+
+    <script>
+      const encodings = ["utf-8", "euc-kr", "windows-949", "x-windows-949"];
+      const resultEl = document.getElementById("result");
+
+      encodings.forEach((label) => {
+        let status = "";
+        let cls = "";
+        try {
+          const dec = new TextDecoder(label);
+          try {
+            dec.decode(new Uint8Array([0x20]));
+            status = "지원됨";
+            cls = "ok";
+          } catch {
+            status = "부분 지원?";
+            cls = "partial";
+          }
+        } catch {
+          status = "미지원";
+          cls = "no";
+        }
+
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${label}:</strong> <span class="${cls}">${status}</span>`;
+        resultEl.appendChild(li);
+      });
+    </script>
+  </body>
+</html>
