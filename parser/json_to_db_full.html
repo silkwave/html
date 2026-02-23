@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>JSON to DB Row Converter</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            font-size: 12px;
+            margin: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            font-family: 'Consolas', monospace;
+            padding: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #eee;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        input {
+            padding: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 6px 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 2px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-convert {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-convert:hover {
+            background-color: #218838;
+        }
+
+        .btn-excel {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-excel:hover {
+            background-color: #0069d9;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 15px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .row-array {
+            background-color: #fff9db;
+        }
+
+        .col-hgrk {
+            color: #007bff;
+            font-weight: bold;
+            background-color: #fdfdfd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>JSON -> DB ROW 테이블 변환기</h2>
+        <textarea id="jsonInput" placeholder="JSON 데이터를 이곳에 붙여넣으세요...">
+{
+  "MATU_DATE": { "desc": "만기일자", "type": "S", "length": "8" },
+  "CS_NO":     { "desc": "고객번호", "type": "S", "length": "9" },
+
+  "LV1_CNT": { "desc": "1단계배열건수", "type": "LN", "length": "5", "value": "LV1_ARRY" },
+  "LV1_ARRY": [
+    {
+      "GLD_VOL_QTY": { "desc": "1단계수량", "type": "S", "length": "3" },
+
+      "LV2_CNT": { "desc": "2단계배열건수", "type": "LN", "length": "5", "value": "LV2_ARRY" },
+      "LV2_ARRY": [
+        {
+          "SUB_ITEM_NM": { "desc": "2단계상품명", "type": "S", "length": "40" },
+
+          "LV3_CNT": { "desc": "3단계배열건수", "type": "LN", "length": "5", "value": "LV3_ARRY" },
+          "LV3_ARRY": [
+            {
+              "DETL_SPEC_CTT": { "desc": "3단계상세내용", "type": "S", "length": "100" }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "RMK1": { "desc": "비교1", "type": "S", "length": "100" },
+  "RMK2": { "desc": "비교2", "type": "S", "length": "100" }
+}
+        </textarea>
+
+        <div class="controls">
+            <span>전문ID:</span>
+            <input type="text" id="progId" value="REQ_01" style="width:220px;">
+            <button class="btn-convert" onclick="app.execute()">변환하기</button>
+            <button class="btn-excel" onclick="app.downloadExcel()">엑셀 다운로드 (.xls)</button>
+            <button onclick="app.reset()">초기화</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th>전문ID</th>
+                        <th>순번</th>
+                        <th>레벨</th>
+                        <th>등록일시</th>
+                        <th class="col-hgrk">상위순번</th>
+                        <th class="col-hgrk">상위이름</th>
+                        <th>필드명</th>
+                        <th>타입</th>
+                        <th>길이</th>
+                        <th>설명</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 애플리케이션 전체 로직을 관리하는 객체
+        const app = {
+            // 애플리케이션의 상태를 저장하는 객체 (변환된 행 데이터)
+            state: { rows: [] },
+
+            // 입력 필드와 결과 테이블을 초기화하는 함수
+            reset() {
+                document.getElementById('jsonInput').value = '';
+                document.querySelector('#resultTable tbody').innerHTML = '';
+                this.state.rows = []; // 상태에 저장된 행 데이터도 초기화
+            },
+
+            // JSON 변환을 실행하는 메인 함수
+            execute() {
+                const jsonString = document.getElementById('jsonInput').value.trim(); // JSON 입력값
+                const messageId = document.getElementById('progId').value.trim(); // 전문ID 입력값
+                if (!jsonString) return alert("JSON 데이터를 입력해주세요.");
+
+                try {
+                    const parsedJson = JSON.parse(jsonString); // 입력된 문자열을 JSON 객체로 파싱
+                    this.state.rows = []; // 이전 결과 초기화
+                    let sequenceCounter = 0; // 행 순번을 위한 카운터
+
+                    // 1. 루트(최상위) 행을 추가합니다.
+                    // 이 행은 전체 구조의 시작점을 나타내며, 상위(HGRK) 정보를 가지지 않습니다.
+                    this.pushData(messageId, 0, "root", { type: "O", desc: "root" }, null, "", 0);
+
+                    // 2. JSON 객체를 재귀적으로 탐색하며 파싱하는 함수
+                    // currentObject: 현재 파싱할 객체, msgId: 전문ID, parentSequence: 부모 행의 순번, parentName: 부모 필드의 이름, level: 현재 깊이
+                    const parse = (currentObject, msgId, parentSequence, parentName, level) => {
+                        for (const key in currentObject) {
+                            // 필드의 속성(type, value) 자체는 별도의 행으로 만들지 않기 위해 건너뜁니다.
+                            // 예: "MATU_DATE": { "desc": "만기일자", "type": "S" } 에서 "type"은 속성이므로 건너뜁니다.
+                            if ((key === "type" || key === "value") && typeof currentObject[key] === "string") continue;
+
+                            const fieldValue = currentObject[key]; // 현재 처리할 필드의 값 (객체, 배열, 또는 단순 값)
+                            const currentSequence = ++sequenceCounter; // 현재 필드의 고유 순번 생성
+
+                            // 현재 필드 정보를 행 데이터로 저장
+                            this.pushData(msgId, currentSequence, key, fieldValue, parentSequence, parentName, level);
+
+                            // 하위 구조(배열 또는 객체)가 있는지 확인하고 재귀적으로 탐색
+                            if (Array.isArray(fieldValue)) {
+                                // 값이 배열인 경우 (예: LV1_ARRY)
+                                // 배열의 각 요소를 순회하며, 현재 필드를 부모로 지정하여 다시 파싱
+                                fieldValue.forEach(childObject => parse(childObject, msgId, currentSequence, key, level + 1));
+                            } else if (typeof fieldValue === "object" && fieldValue !== null && !fieldValue.desc) {
+                                // 값이 객체이지만, 'desc' 속성이 없는 경우 (중첩된 구조 객체)
+                                // 현재 필드를 부모로 지정하여 다시 파싱
+                                // 'desc'가 있으면 { "desc": ..., "type": ... } 형태의 필드 정보 객체이므로 재귀하지 않음.
+                                parse(fieldValue, msgId, currentSequence, key, level + 1);
+                            }
+                        }
+                    };
+
+                    // 최상위 JSON 객체부터 파싱 시작. 부모 순번은 0(루트), 부모 이름은 "root"
+                    parse(parsedJson, messageId, 0, "root", 1);
+                    this.render(); // 파싱이 끝난 데이터를 테이블에 렌더링
+                } catch (e) {
+                    console.error(e);
+                    alert("JSON 파싱 실패: 형식을 확인하세요.");
+                }
+            },
+
+            // 한 행의 데이터를 생성하여 state.rows 배열에 추가하는 함수
+            // messageId: 전문ID, sequence: 현재 행 순번, fieldName: 현재 필드명, fieldInfo: 필드 정보 객체, parentSequence: 상위 행 순번, parentName: 상위 필드명, level: 깊이
+            pushData(messageId, sequence, fieldName, fieldInfo, parentSequence, parentName, level) {
+                this.state.rows.push({
+                    TMSG_MGMT_ID: messageId,
+                    TMSG_DTLS_SEQ: sequence,
+                    LEVEL: level,
+                    SYS_REG_DTM: new Date().toISOString().replace('T', ' ').substring(0, 19), // 현재 시간 (YYYY-MM-DD HH:MM:SS)
+                    TMSG_DTLS_HGRK_SEQ: parentSequence, // 상위(부모) 행의 순번
+                    TMSG_DTLS_HGRK_NM: parentName, // 상위(부모) 필드의 이름
+                    TMSG_DTLS_NM: fieldName, // 현재 필드의 이름
+                    // 필드 타입 결정: fieldInfo.type이 있으면 사용, 없으면 배열(L), 객체(O), 그 외(S)로 자동 판단
+                    TMSG_DTLS_TYP_NM: fieldInfo.type || (Array.isArray(fieldInfo) ? "L" : (typeof fieldInfo === 'object' ? "O" : "S")),
+                    TMSG_DTLS_LEN: fieldInfo.length || "", // 길이
+                    RMK: fieldInfo.desc || "" // 설명
+                });
+            },
+
+            // state.rows에 저장된 데이터를 HTML 테이블로 렌더링하는 함수
+            render() {
+                const tableBody = document.querySelector('#resultTable tbody');
+                tableBody.innerHTML = this.state.rows.map(row => {
+                    // 상위 순번(HGRK_SEQ)이 0 또는 null(루트)이면 화면에 빈 값으로 표시
+                    const displayParentSeq = (row.TMSG_DTLS_HGRK_SEQ === 0 || row.TMSG_DTLS_HGRK_SEQ === null) ? "" : row.TMSG_DTLS_HGRK_SEQ;
+                    // 상위 순번이 빈 값이면 상위 이름도 빈 값으로 표시
+                    const displayParentName = (displayParentSeq === "") ? "" : row.TMSG_DTLS_HGRK_NM;
+
+                    return `
+                <tr class="${row.TMSG_DTLS_TYP_NM === 'L' ? 'row-array' : ''}">
+                    <td>${row.TMSG_MGMT_ID}</td>
+                    <td>${row.TMSG_DTLS_SEQ}</td>
+                    <td>${row.LEVEL}</td>
+                    <td>${row.SYS_REG_DTM}</td>
+                    <td class="col-hgrk">${displayParentSeq}</td>
+                    <td class="col-hgrk">${displayParentName}</td>
+                    <td><strong>${row.TMSG_DTLS_NM}</strong></td>
+                    <td>${row.TMSG_DTLS_TYP_NM}</td>
+                    <td>${row.TMSG_DTLS_LEN}</td>
+                    <td>${row.RMK}</td>
+                </tr>`;
+                }).join('');
+            },
+
+            // 현재 테이블 데이터를 엑셀(.xls) 파일로 다운로드하는 함수
+            downloadExcel() {
+                const { rows } = this.state;
+                if (!rows || rows.length === 0) return alert("데이터가 없습니다.");
+
+                // XML 기반의 스프레드시트 형식으로 데이터를 구성
+                let xmlString = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="DB_ROWS"><Table>`;
+
+                // 헤더 행 작성 (TMSG_MGMT_ID, SEQ 등)
+                xmlString += "<Row>";
+                Object.keys(rows[0]).forEach(key => xmlString += `<Cell><Data ss:Type="String">${key}</Data></Cell>`);
+                xmlString += "</Row>";
+
+                // 데이터 행 작성
+                rows.forEach(row => {
+                    xmlString += "<Row>";
+                    Object.entries(row).forEach(([key, value]) => {
+                        let finalValue = value;
+                        // render 함수와 동일하게, 루트 행의 상위(HGRK) 정보는 빈 값으로 처리
+                        if (key === 'TMSG_DTLS_HGRK_SEQ' && (value === 0 || value === null)) {
+                            finalValue = "";
+                        }
+                        if (key === 'TMSG_DTLS_HGRK_NM' && (row.TMSG_DTLS_HGRK_SEQ === 0 || row.TMSG_DTLS_HGRK_SEQ === null)) {
+                            finalValue = "";
+                        }
+                        // 셀 데이터 추가 (null이나 undefined는 빈 문자열로 처리)
+                        xmlString += `<Cell><Data ss:Type="String">${finalValue ?? ""}</Data></Cell>`;
+                    });
+                    xmlString += "</Row>";
+                });
+
+                xmlString += `</Table></Worksheet></Workbook>`;
+
+                // 생성된 XML 데이터를 Blob 객체로 변환
+                const blob = new Blob([xmlString], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+                // 다운로드 링크를 동적으로 생성하여 클릭 이벤트를 발생시킴
+                const downloadLink = document.createElement("a");
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = `DB_SPEC_${new Date().getTime()}.xls`;
+                downloadLink.click();
+            }
+        };
+    </script>
+</body>
+
+</html>
