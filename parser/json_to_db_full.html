@@ -177,6 +177,10 @@
     </div>
 
     <script>
+        const $id = (id) => document.getElementById(id);
+        const $ = (selector) => document.querySelector(selector);
+        const isRootSequence = (value) => value === 0 || value === null;
+
         // 애플리케이션 전체 로직을 관리하는 객체
         const app = {
             // 애플리케이션의 상태를 저장하는 객체 (변환된 행 데이터)
@@ -184,56 +188,66 @@
 
             // 입력 필드와 결과 테이블을 초기화하는 함수
             reset() {
-                document.getElementById('jsonInput').value = '';
-                document.querySelector('#resultTable tbody').innerHTML = '';
+                $id('jsonInput').value = '';
+                $('#resultTable tbody').innerHTML = '';
                 this.state.rows = []; // 상태에 저장된 행 데이터도 초기화
             },
 
             // JSON 변환을 실행하는 메인 함수
             execute() {
-                const jsonString = document.getElementById('jsonInput').value.trim(); // JSON 입력값
-                const messageId = document.getElementById('progId').value.trim(); // 전문ID 입력값
+                const jsonString = $id('jsonInput').value.trim(); // JSON 입력값
+                const messageId = $id('progId').value.trim(); // 전문ID 입력값
                 if (!jsonString) return alert("JSON 데이터를 입력해주세요.");
 
                 try {
                     const parsedJson = JSON.parse(jsonString); // 입력된 문자열을 JSON 객체로 파싱
                     this.state.rows = []; // 이전 결과 초기화
                     let sequenceCounter = 0; // 행 순번을 위한 카운터
+                    const ROOT_SEQUENCE = 0;
+                    const ROOT_NAME = "root";
+
+                    const shouldSkipMetaKey = (key, value) =>
+                        (key === "type" || key === "value") && typeof value === "string";
+
+                    const shouldRecurseObject = (value) =>
+                        typeof value === "object" && value !== null && !Array.isArray(value) && !value.desc;
 
                     // 1. 루트(최상위) 행을 추가합니다.
                     // 이 행은 전체 구조의 시작점을 나타내며, 상위(HGRK) 정보를 가지지 않습니다.
-                    this.pushData(messageId, 0, "root", { type: "O", desc: "root" }, null, "", 0);
+                    this.pushData(messageId, ROOT_SEQUENCE, ROOT_NAME, { type: "O", desc: ROOT_NAME }, null, "", 0);
 
                     // 2. JSON 객체를 재귀적으로 탐색하며 파싱하는 함수
-                    // currentObject: 현재 파싱할 객체, msgId: 전문ID, parentSequence: 부모 행의 순번, parentName: 부모 필드의 이름, level: 현재 깊이
-                    const parse = (currentObject, msgId, parentSequence, parentName, level) => {
+                    // currentObject: 현재 파싱할 객체, parentSequence: 부모 행의 순번, parentName: 부모 필드의 이름, level: 현재 깊이
+                    const parse = (currentObject, parentSequence, parentName, level) => {
                         for (const key in currentObject) {
                             // 필드의 속성(type, value) 자체는 별도의 행으로 만들지 않기 위해 건너뜁니다.
                             // 예: "MATU_DATE": { "desc": "만기일자", "type": "S" } 에서 "type"은 속성이므로 건너뜁니다.
-                            if ((key === "type" || key === "value") && typeof currentObject[key] === "string") continue;
+                            if (shouldSkipMetaKey(key, currentObject[key])) continue;
 
                             const fieldValue = currentObject[key]; // 현재 처리할 필드의 값 (객체, 배열, 또는 단순 값)
                             const currentSequence = ++sequenceCounter; // 현재 필드의 고유 순번 생성
 
                             // 현재 필드 정보를 행 데이터로 저장
-                            this.pushData(msgId, currentSequence, key, fieldValue, parentSequence, parentName, level);
+                            this.pushData(messageId, currentSequence, key, fieldValue, parentSequence, parentName, level);
 
                             // 하위 구조(배열 또는 객체)가 있는지 확인하고 재귀적으로 탐색
                             if (Array.isArray(fieldValue)) {
                                 // 값이 배열인 경우 (예: LV1_ARRY)
                                 // 배열의 각 요소를 순회하며, 현재 필드를 부모로 지정하여 다시 파싱
-                                fieldValue.forEach(childObject => parse(childObject, msgId, currentSequence, key, level + 1));
-                            } else if (typeof fieldValue === "object" && fieldValue !== null && !fieldValue.desc) {
+                                for (const childObject of fieldValue) {
+                                    parse(childObject, currentSequence, key, level + 1);
+                                }
+                            } else if (shouldRecurseObject(fieldValue)) {
                                 // 값이 객체이지만, 'desc' 속성이 없는 경우 (중첩된 구조 객체)
                                 // 현재 필드를 부모로 지정하여 다시 파싱
                                 // 'desc'가 있으면 { "desc": ..., "type": ... } 형태의 필드 정보 객체이므로 재귀하지 않음.
-                                parse(fieldValue, msgId, currentSequence, key, level + 1);
+                                parse(fieldValue, currentSequence, key, level + 1);
                             }
                         }
                     };
 
                     // 최상위 JSON 객체부터 파싱 시작. 부모 순번은 0(루트), 부모 이름은 "root"
-                    parse(parsedJson, messageId, 0, "root", 1);
+                    parse(parsedJson, ROOT_SEQUENCE, ROOT_NAME, 1);
                     this.render(); // 파싱이 끝난 데이터를 테이블에 렌더링
                 } catch (e) {
                     console.error(e);
@@ -261,12 +275,13 @@
 
             // state.rows에 저장된 데이터를 HTML 테이블로 렌더링하는 함수
             render() {
-                const tableBody = document.querySelector('#resultTable tbody');
+                const tableBody = $('#resultTable tbody');
                 tableBody.innerHTML = this.state.rows.map(row => {
                     // 상위 순번(HGRK_SEQ)이 0 또는 null(루트)이면 화면에 빈 값으로 표시
-                    const displayParentSeq = (row.TMSG_DTLS_HGRK_SEQ === 0 || row.TMSG_DTLS_HGRK_SEQ === null) ? "" : row.TMSG_DTLS_HGRK_SEQ;
+                    const isRoot = isRootSequence(row.TMSG_DTLS_HGRK_SEQ);
+                    const displayParentSeq = isRoot ? "" : row.TMSG_DTLS_HGRK_SEQ;
                     // 상위 순번이 빈 값이면 상위 이름도 빈 값으로 표시
-                    const displayParentName = (displayParentSeq === "") ? "" : row.TMSG_DTLS_HGRK_NM;
+                    const displayParentName = isRoot ? "" : row.TMSG_DTLS_HGRK_NM;
 
                     return `
                 <tr class="${row.TMSG_DTLS_TYP_NM === 'L' ? 'row-array' : ''}">
@@ -289,44 +304,60 @@
                 const { rows } = this.state;
                 if (!rows || rows.length === 0) return alert("데이터가 없습니다.");
 
+                const escapeXml = (value) => String(value)
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll('"', "&quot;")
+                    .replaceAll("'", "&apos;");
+
+                const toCell = (value) => `<Cell><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`;
+
+                const normalizeCellValue = (row, key, value) => {
+                    // render 함수와 동일하게, 루트 행의 상위(HGRK) 정보는 빈 값으로 처리
+                    const isRoot = isRootSequence(row.TMSG_DTLS_HGRK_SEQ);
+                    if (key === 'TMSG_DTLS_HGRK_SEQ' && isRoot) return "";
+                    if (key === 'TMSG_DTLS_HGRK_NM' && isRoot) return "";
+                    // 셀 값 (null이나 undefined는 빈 문자열로 처리)
+                    return value ?? "";
+                };
+
                 // XML 기반의 스프레드시트 형식으로 데이터를 구성
-                let xmlString = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-<Worksheet ss:Name="DB_ROWS"><Table>`;
+                const parts = [
+                    `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>`,
+                    `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">`,
+                    `<Worksheet ss:Name="DB_ROWS"><Table>`
+                ];
 
                 // 헤더 행 작성 (TMSG_MGMT_ID, SEQ 등)
-                xmlString += "<Row>";
-                Object.keys(rows[0]).forEach(key => xmlString += `<Cell><Data ss:Type="String">${key}</Data></Cell>`);
-                xmlString += "</Row>";
+                parts.push("<Row>");
+                Object.keys(rows[0]).forEach(key => parts.push(toCell(key)));
+                parts.push("</Row>");
 
                 // 데이터 행 작성
                 rows.forEach(row => {
-                    xmlString += "<Row>";
+                    parts.push("<Row>");
                     Object.entries(row).forEach(([key, value]) => {
-                        let finalValue = value;
-                        // render 함수와 동일하게, 루트 행의 상위(HGRK) 정보는 빈 값으로 처리
-                        if (key === 'TMSG_DTLS_HGRK_SEQ' && (value === 0 || value === null)) {
-                            finalValue = "";
-                        }
-                        if (key === 'TMSG_DTLS_HGRK_NM' && (row.TMSG_DTLS_HGRK_SEQ === 0 || row.TMSG_DTLS_HGRK_SEQ === null)) {
-                            finalValue = "";
-                        }
-                        // 셀 데이터 추가 (null이나 undefined는 빈 문자열로 처리)
-                        xmlString += `<Cell><Data ss:Type="String">${finalValue ?? ""}</Data></Cell>`;
+                        const cellValue = normalizeCellValue(row, key, value);
+                        parts.push(toCell(cellValue));
                     });
-                    xmlString += "</Row>";
+                    parts.push("</Row>");
                 });
 
-                xmlString += `</Table></Worksheet></Workbook>`;
+                parts.push(`</Table></Worksheet></Workbook>`);
 
                 // 생성된 XML 데이터를 Blob 객체로 변환
-                const blob = new Blob([xmlString], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+                const blob = new Blob([parts.join("")], { type: 'application/vnd.ms-excel;charset=utf-8;' });
                 // 다운로드 링크를 동적으로 생성하여 클릭 이벤트를 발생시킴
+                const url = URL.createObjectURL(blob);
                 const downloadLink = document.createElement("a");
-                downloadLink.href = URL.createObjectURL(blob);
-                downloadLink.download = `DB_SPEC_${new Date().getTime()}.xls`;
+                downloadLink.href = url;
+                downloadLink.download = `DB_SPEC_${Date.now()}.xls`;
+                document.body.appendChild(downloadLink);
                 downloadLink.click();
+                downloadLink.remove();
+                // 일부 브라우저는 click 직후 revoke 시 다운로드가 실패할 수 있어 지연 처리
+                window.setTimeout(() => URL.revokeObjectURL(url), 0);
             }
         };
     </script>
