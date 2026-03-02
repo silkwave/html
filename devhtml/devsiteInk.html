@@ -16,6 +16,11 @@
       /* 완전한 검정보다 약간 부드러운 먹색 */
       --ink-gray: #555555;
       --border-width: 2px;
+      --grid-minor-color: rgba(0, 0, 0, 0.04);
+      --grid-major-color: rgba(0, 0, 0, 0.075);
+      --grid-line: 1px;
+      --grid-minor-size: 22px;
+      --grid-major-size: 110px;
     }
 
     /* =======================
@@ -26,19 +31,50 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-        body {
-            font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden; /* 가로 스크롤 방지 */
-            background-image:
-                radial-gradient(70rem 45rem at 12% -10%, rgba(15, 118, 110, 0.16), transparent 60%),
-                radial-gradient(60rem 42rem at 90% 12%, rgba(245, 158, 11, 0.13), transparent 60%),
-                linear-gradient(180deg, #f8fbfa 0%, #f5f7f9 45%, #f6f8f6 100%);
-        }
+    body {
+      font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      background-color: var(--paper-bg);
+      color: var(--ink-black);
+      line-height: 1.6;
+      font-size: 14px;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden; /* 가로 스크롤 방지 */
+      background-image:
+        linear-gradient(to right, var(--grid-minor-color) var(--grid-line), transparent var(--grid-line)),
+        linear-gradient(to bottom, var(--grid-minor-color) var(--grid-line), transparent var(--grid-line)),
+        linear-gradient(to right, var(--grid-major-color) var(--grid-line), transparent var(--grid-line)),
+        linear-gradient(to bottom, var(--grid-major-color) var(--grid-line), transparent var(--grid-line)),
+        radial-gradient(70rem 45rem at 12% -10%, rgba(15, 118, 110, 0.16), transparent 60%),
+        radial-gradient(60rem 42rem at 90% 12%, rgba(245, 158, 11, 0.13), transparent 60%),
+        linear-gradient(180deg, #f8fbfa 0%, #f5f7f9 45%, #f6f8f6 100%);
+      background-size:
+        var(--grid-minor-size) var(--grid-minor-size),
+        var(--grid-minor-size) var(--grid-minor-size),
+        var(--grid-major-size) var(--grid-major-size),
+        var(--grid-major-size) var(--grid-major-size),
+        auto,
+        auto,
+        auto;
+      background-position:
+        0 0,
+        0 0,
+        0 0,
+        0 0,
+        center,
+        center,
+        center;
+    }
+
+    /* 종이 노이즈 질감 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
 
     /* =======================
        레이아웃
@@ -77,7 +113,7 @@
     }
 
     .site-card h3 {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 900;
       margin: 0 0 10px 0;
       text-decoration: underline;
@@ -85,7 +121,7 @@
     }
 
     .site-card p {
-      font-size: 15px;
+      font-size: 14px;
       color: var(--ink-gray);
       margin-bottom: 25px;
     }
@@ -106,7 +142,7 @@
       text-decoration: none;
       color: var(--ink-black);
       font-weight: 700;
-      font-size: 16px;
+      font-size: 14px;
       border-bottom: 1px solid var(--ink-black);
       transition: background 0.2s;
     }
@@ -118,7 +154,7 @@
 
     .link-button::before {
       content: "■ ";
-      font-size: 10px;
+      font-size: 9px;
       vertical-align: middle;
     }
 
@@ -132,7 +168,7 @@
       background: transparent;
       color: var(--ink-black);
       font-family: inherit;
-      font-size: 15px;
+      font-size: 14px;
       height: 120px;
       resize: none;
       /* 줄노트 느낌 배경 */
@@ -170,7 +206,7 @@
       border: none;
       background: white;
       color: var(--ink-black);
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 800;
       cursor: pointer;
       border-right: 2px solid var(--ink-black);

@@ -12,6 +12,11 @@
       --ink-light: #999999;
       --border-width: 2px;
       --shadow: 5px 5px 0px var(--ink-black);
+      --grid-minor-color: rgba(0, 0, 0, 0.025);
+      --grid-major-color: rgba(0, 0, 0, 0.05);
+      --grid-line: 1px;
+      --grid-minor-size: 22px;
+      --grid-major-size: 110px;
     }
 
     * {
@@ -22,8 +27,19 @@
     body {
       font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
       background-color: var(--paper-bg);
+      background-image:
+        linear-gradient(to right, var(--grid-minor-color) var(--grid-line), transparent var(--grid-line)),
+        linear-gradient(to bottom, var(--grid-minor-color) var(--grid-line), transparent var(--grid-line)),
+        linear-gradient(to right, var(--grid-major-color) var(--grid-line), transparent var(--grid-line)),
+        linear-gradient(to bottom, var(--grid-major-color) var(--grid-line), transparent var(--grid-line));
+      background-size:
+        var(--grid-minor-size) var(--grid-minor-size),
+        var(--grid-minor-size) var(--grid-minor-size),
+        var(--grid-major-size) var(--grid-major-size),
+        var(--grid-major-size) var(--grid-major-size);
       color: var(--ink-black);
       line-height: 1.6;
+      font-size: 14px;
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -83,7 +99,7 @@
     }
 
     .site-card h3 {
-      font-size: 25px;
+      font-size: 22px;
       font-weight: 900;
       margin: 0;
       text-decoration: underline;
@@ -99,7 +115,7 @@
     }
 
     .site-card p {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--ink-gray);
       margin-bottom: 22px;
     }
@@ -118,7 +134,7 @@
       text-decoration: none;
       color: var(--ink-black);
       font-weight: 700;
-      font-size: 15.5px;
+      font-size: 14px;
       border-bottom: 1px solid #ccc;
       transition: background 0.15s, padding-left 0.15s;
     }
@@ -131,7 +147,7 @@
 
     .link-button::before {
       content: "■ ";
-      font-size: 9px;
+      font-size: 8px;
       vertical-align: middle;
       opacity: 0.6;
     }
@@ -144,7 +160,7 @@
       background: transparent;
       color: var(--ink-black);
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13px;
       height: 112px;
       resize: none;
       background-image: linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
@@ -184,7 +200,7 @@
       border: none;
       background: transparent;
       color: var(--ink-black);
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 800;
       cursor: pointer;
       border-right: var(--border-width) solid var(--ink-black);
@@ -249,7 +265,7 @@
     @media (max-width: 768px) {
       .site-wrapper.show-all .site-card { flex: 1 1 100%; }
       .site-card { padding: 22px 18px; }
-      .site-card h3 { font-size: 21px; }
+      .site-card h3 { font-size: 19px; }
     }
   </style>
 </head>
