@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON → DB 변환기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --header-bg: #1c2128;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  header span {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    flex: 1;
+    height: calc(100vh - 57px);
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+  }
+
+  .panel-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-header .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .panel-header .badge {
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2px 8px;
+    color: var(--text-muted);
+  }
+
+  .input-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #jsonInput {
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    tab-size: 2;
+  }
+
+  #jsonInput::placeholder { color: var(--text-muted); }
+
+  .controls {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .field-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .field-group label {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  input[type="text"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    width: 160px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus { border-color: var(--accent); }
+
+  .btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0d1117;
+  }
+  .btn-primary:hover { background: #79b8ff; transform: translateY(-1px); }
+
+  .btn-success {
+    background: var(--accent2);
+    color: #0d1117;
+  }
+  .btn-success:hover { background: #56d364; transform: translateY(-1px); }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--accent3);
+    border: 1px solid var(--accent3);
+  }
+  .btn-danger:hover { background: rgba(247,129,102,0.1); }
+
+  .result-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .result-panel .panel-header {
+    flex-shrink: 0;
+  }
+
+  .table-wrap {
+    flex: 1;
+    overflow: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  thead tr {
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  th {
+    padding: 9px 12px;
+    text-align: left;
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  tr:hover td { background: var(--surface2); }
+
+  td.type-cell {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  td.key-cell { color: var(--accent2); }
+
+  td.seq-cell {
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  td.depth-cell {
+    text-align: center;
+    color: var(--accent3);
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    gap: 12px;
+  }
+
+  .empty-state .icon {
+    font-size: 40px;
+    opacity: 0.3;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+  }
+
+  .status-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 6px 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .status-bar span { color: var(--accent2); }
+
+  .error-msg {
+    background: rgba(247,129,102,0.1);
+    border: 1px solid var(--accent3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 12px;
+    font-size: 13px;
+    color: var(--accent3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .depth-indent {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-left: 2px solid var(--border);
+    border-bottom: 2px solid var(--border);
+    margin-right: 4px;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+
+  @media (max-width: 768px) {
+    .main { grid-template-columns: 1fr; height: auto; }
+    .panel { height: 50vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>JSON → DB 변환기</h1>
+  <span>json_TO_DB_as_is</span>
+</header>
+
+<div class="main">
+
+  <!-- 왼쪽: 입력 패널 -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="label">JSON Input</span>
+      <button class="btn btn-danger" onclick="clearInput()" style="padding:3px 10px;font-size:11px;">Clear</button>
+    </div>
+    <div class="input-area">
+      <textarea id="jsonInput" placeholder='{"field1": {"type": "VARCHAR", "length": "100", "desc": "설명", "value": ""}, ...}'></textarea>
+    </div>
+    <div class="controls">
+      <div class="field-group">
+        <label>메시지 관리 ID</label>
+        <input type="text" id="tmsqMqmtId" placeholder="MSG_ID_001">
+      </div>
+      <button class="btn btn-primary" onclick="convert()">▶ 변환 실행</button>
+    </div>
+  </div>
+
+  <!-- 오른쪽: 결과 패널 -->
+  <div class="result-panel">
+    <div class="panel-header">
+      <span class="label">Result Table</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="badge" id="rowCount">0 rows</span>
+        <button class="btn btn-success" id="downloadBtn" style="padding:4px 12px;font-size:12px;">⬇ CSV 다운로드</button>
+      </div>
+    </div>
+
+    <div class="table-wrap" id="tableWrap">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">⬡</div>
+        <p>JSON을 입력하고 변환을 실행하세요</p>
+      </div>
+      <!-- 결과 테이블은 여기에 삽입됩니다 -->
+    </div>
+
+    <div class="status-bar" id="statusBar">
+      <span id="statusText">대기 중</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let seqCountter = 0;
+
+  // ─────────────────────────────────────────
+  // 핵심 로직: JSON → 행(row) 배열 추출
+  // ─────────────────────────────────────────
+  function extractFields(obj, path = "root", result = [], parentSeq = null, parentName = '') {
+
+    const currentSeq = seqCountter++;
+    const pathParts = path.split('.');
+    const depthLevel = pathParts.length - 1;
+    const lastKey = pathParts[pathParts.length - 1];
+    const parentname = (depthLevel === 1 && pathParts[0] === 'root')
+      ? ' '
+      : pathParts[pathParts.length - 2];
+
+    if (obj.type) {
+      result.push({
+        seq:          currentSeq,
+        path:         path,
+        pathParts:    pathParts,
+        last_key:     lastKey.trim(),
+        desc:         (obj.desc   || '').trim(),
+        type:         (obj.type   || '').trim(),
+        length:       (obj.length || '').trim(),
+        value:        (obj.value  || '').trim(),
+        parent_seq:   parentSeq,
+        depth_level:  depthLevel,
+        parent_name:  (parentname || '').trim()
+      });
+    }
+
+    for (const key in obj) {
+      const value = obj[key];
+      const currentPath = `${path}.${key}`;
+      if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+        extractFields(value, currentPath, result, currentSeq, key);
+      }
+    }
+
+    return result;
+  }
+
+  // ─────────────────────────────────────────
+  // 변환 실행
+  // ─────────────────────────────────────────
+  function convert() {
+    const input = document.getElementById('jsonInput').value;
+    const tmsqMqmtId = document.getElementById('tmsqMqmtId').value.trim();
+
+    // 이전 오류 메시지 제거
+    document.querySelectorAll('.error-msg').forEach(e => e.remove());
+
+    if (!input.trim()) {
+      showError('JSON을 입력해주세요.');
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(input);
+    } catch (e) {
+      showError('JSON 파싱 오류: ' + e.message);
+      return;
+    }
+
+    seqCountter = 0;
+    const rows = extractFields(parsed);
+
+    if (rows.length === 0) {
+      showError('"type" 필드가 있는 항목을 찾을 수 없습니다. JSON 구조를 확인하세요.');
+      return;
+    }
+
+    renderTable(rows, tmsqMqmtId);
+    document.getElementById('rowCount').textContent = rows.length + ' rows';
+    document.getElementById('statusText').textContent =
+      `✓ 변환 완료 — ${rows.length}개 행 추출 / MsgId: ${tmsqMqmtId || '(없음)'}`;
+  }
+
+  // ─────────────────────────────────────────
+  // 테이블 렌더링
+  // ─────────────────────────────────────────
+  function renderTable(rows, tmsqMqmtId) {
+    const wrap = document.getElementById('tableWrap');
+    document.getElementById('emptyState')?.remove();
+
+    const cols = [
+      { key: 'seq',         label: 'SEQ' },
+      { key: 'tmsq',        label: 'TMSQ_MQMT_ID' },
+      { key: 'last_key',    label: 'LAST_KEY' },
+      { key: 'desc',        label: 'DESC' },
+      { key: 'type',        label: 'TYPE' },
+      { key: 'length',      label: 'LENGTH' },
+      { key: 'value',       label: 'VALUE' },
+      { key: 'parent_seq',  label: 'PARENT_SEQ' },
+      { key: 'depth_level', label: 'DEPTH' },
+      { key: 'parent_name', label: 'PARENT_NAME' },
+      { key: 'path',        label: 'PATH' },
+    ];
+
+    let html = `<table id="resultTable"><thead><tr>`;
+    cols.forEach(c => { html += `<th>${c.label}</th>`; });
+    html += `</tr></thead><tbody>`;
+
+    rows.forEach(row => {
+      html += `<tr>
+        <td class="seq-cell">${row.seq}</td>
+        <td>${escHtml(tmsqMqmtId)}</td>
+        <td class="key-cell">${escHtml(row.last_key)}</td>
+        <td>${escHtml(row.desc)}</td>
+        <td class="type-cell">${escHtml(row.type)}</td>
+        <td style="text-align:right">${escHtml(row.length)}</td>
+        <td>${escHtml(row.value)}</td>
+        <td class="seq-cell">${row.parent_seq ?? ''}</td>
+        <td class="depth-cell">${row.depth_level}</td>
+        <td>${escHtml(row.parent_name)}</td>
+        <td style="color:var(--text-muted);font-size:11px">${escHtml(row.path)}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    wrap.innerHTML = html;
+  }
+
+  // ─────────────────────────────────────────
+  // CSV 다운로드
+  // ─────────────────────────────────────────
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const table = document.getElementById('resultTable');
+    if (!table) {
+      alert('먼저 변환을 실행하세요');
+      return;
+    }
+
+    const rows = table.querySelectorAll('tr');
+    if (!rows.length) {
+      alert('먼저 변환을 실행하세요');
+      return;
+    }
+
+    let csvContent = '\uFEFF'; // BOM (UTF-8 with BOM for Excel)
+
+    rows.forEach((row, index) => {
+      // index 0 = 헤더, 그 외 = 데이터
+      const cols = row.querySelectorAll('th, td');
+      const rowData = Array.from(cols).map(cell => {
+        const value = cell.textContent.trim().replace(/"/g, '""');
+        return `"${value}"`;
+      }).join(',');
+      csvContent += rowData + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'json_to_db_rows.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // ─────────────────────────────────────────
+  // 유틸
+  // ─────────────────────────────────────────
+  function clearInput() {
+    document.getElementById('jsonInput').value = '';
+    document.getElementById('tableWrap').innerHTML =
+      `<div class="empty-state" id="emptyState"><div class="icon">⬡</div><p>JSON을 입력하고 변환을 실행하세요</p></div>`;
+    document.getElementById('rowCount').textContent = '0 rows';
+    document.getElementById('statusText').textContent = '대기 중';
+  }
+
+  function showError(msg) {
+    const wrap = document.getElementById('tableWrap');
+    const div = document.createElement('div');
+    div.className = 'error-msg';
+    div.textContent = '⚠ ' + msg;
+    wrap.prepend(div);
+    document.getElementById('statusText').textContent = '오류 발생';
+  }
+
+  function escHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // ─────────────────────────────────────────
+  // 샘플 JSON 로드 (첫 진입 시 힌트용)
+  // ─────────────────────────────────────────
+  document.getElementById('jsonInput').value = JSON.stringify({
+    "header": {
+      "msgId": {
+        "type": "VARCHAR",
+        "length": "20",
+        "desc": "메시지 ID",
+        "value": ""
+      },
+      "sendDt": {
+        "type": "DATE",
+        "length": "8",
+        "desc": "전송일자",
+        "value": ""
+      }
+    },
+    "body": {
+      "custNm": {
+        "type": "VARCHAR",
+        "length": "100",
+        "desc": "고객명",
+        "value": ""
+      },
+      "amount": {
+        "type": "NUMBER",
+        "length": "15",
+        "desc": "금액",
+        "value": "0"
+      }
+    }
+  }, null, 2);
+</script>
+</body>
+</html>

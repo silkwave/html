@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
@@ -9,8 +10,10 @@
        전자종이 변수 정의
        ======================= */
     :root {
-      --paper-bg: #f4f4f4; /* 약간 미색이 도는 종이색 */
-      --ink-black: #1a1a1a; /* 완전한 검정보다 약간 부드러운 먹색 */
+      --paper-bg: #f4f4f4;
+      /* 약간 미색이 도는 종이색 */
+      --ink-black: #1a1a1a;
+      /* 완전한 검정보다 약간 부드러운 먹색 */
       --ink-gray: #555555;
       --border-width: 2px;
     }
@@ -18,20 +21,24 @@
     /* =======================
        기본 스타일 및 종이 질감
        ======================= */
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: var(--paper-bg);
-      /* 노이즈 배경은 아래 스크립트에서 동적으로 설정됩니다. */
-      background-blend-mode: multiply;
-      opacity: 0.98;
-      color: var(--ink-black);
-      /* 가독성을 위한 명조체(Serif) 우선 설정 */
-      font-family: 'Apple SD Gothic Neo', 'Nanum Myeongjo', serif;
-      line-height: 1.6;
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
+
+        body {
+            font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden; /* 가로 스크롤 방지 */
+            background-image:
+                radial-gradient(70rem 45rem at 12% -10%, rgba(15, 118, 110, 0.16), transparent 60%),
+                radial-gradient(60rem 42rem at 90% 12%, rgba(245, 158, 11, 0.13), transparent 60%),
+                linear-gradient(180deg, #f8fbfa 0%, #f5f7f9 45%, #f6f8f6 100%);
+        }
 
     /* =======================
        레이아웃
@@ -129,7 +136,7 @@
       height: 120px;
       resize: none;
       /* 줄노트 느낌 배경 */
-      background-image: linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
       background-size: 100% 1.6em;
     }
 
@@ -147,12 +154,13 @@
       bottom: 40px;
       transform: translateX(-50%);
       display: flex;
-      gap: 0; /* 버튼 사이 간격 제거하여 일체감 형성 */
+      gap: 0;
+      /* 버튼 사이 간격 제거하여 일체감 형성 */
       width: 90%;
       max-width: 450px;
       background: white;
       border: 3px solid var(--ink-black);
-      box-shadow: 6px 6px 0px rgba(0,0,0,0.2);
+      box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.2);
       z-index: 1000;
     }
 
@@ -168,7 +176,9 @@
       border-right: 2px solid var(--ink-black);
     }
 
-    #cardControls button:last-child { border-right: none; }
+    #cardControls button:last-child {
+      border-right: none;
+    }
 
     #cardControls button:active {
       background: var(--ink-black);
@@ -186,150 +196,150 @@
 
     /* 반응형 */
     @media (max-width: 768px) {
-      .site-wrapper.show-all .site-card { flex: 1 1 100%; }
-      .site-card { padding: 20px; }
+      .site-wrapper.show-all .site-card {
+        flex: 1 1 100%;
+      }
+
+      .site-card {
+        padding: 20px;
+      }
     }
   </style>
 </head>
+
 <body>
 
-    <main class="site-wrapper">
+  <main class="site-wrapper">
+    </section>
 
-        <section class="site-card">
-            <h3>환경설정</h3>
-            <p>코딩 필수 링크</p>
-            <ul class="link-list">
-                <li><a class="link-button" href="https://www.google.com"    target="_blank">구글 검색</a></li>
-                <li><a class="link-button" href="https://github.com"        target="_blank">GitHub 저장소</a></li>
-                <li><a class="link-button" href="https://stackoverflow.com" target="_blank">스택 오버플로우</a></li>
-            </ul>
-            <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
-        </section>      
-      
-        <section class="site-card">
-            <h3>환경설정</h3>
-            <p>코딩 필수 링크</p>
-            <ul class="link-list">
-                <li><a class="link-button" href="https://www.google.com"    target="_blank">구글 검색</a></li>
-                <li><a class="link-button" href="https://github.com"        target="_blank">GitHub 저장소</a></li>
-                <li><a class="link-button" href="https://stackoverflow.com" target="_blank">스택 오버플로우</a></li>
-            </ul>
-            <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
-        </section>
+    <section class="site-card">
+      <h3>환경설정</h3>
+      <p>코딩 필수 링크</p>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://chatgpt.com/" target="_blank">chatgpt</a></li>
+        <li><a class="link-button" href="https://gemini.google.com/" target="_blank">gemini</a></li>
+        <li><a class="link-button" href="https://grok.com/" target="_blank">grok</a></li>
+        <li><a class="link-button" href="https://claude.ai/new" target="_blank">claude</a></li>        
+      </ul>
+      <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
+    </section>
 
-        <section class="site-card">
-            <h3>개발</h3>
-            <p>코딩 필수 링크</p>
-            <ul class="link-list">
-                <li><a class="link-button" href="https://www.google.com"    target="_blank">구글 검색</a></li>
-                <li><a class="link-button" href="https://github.com"        target="_blank">GitHub 저장소</a></li>
-                <li><a class="link-button" href="https://stackoverflow.com" target="_blank">스택 오버플로우</a></li>
-            </ul>
-            <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
-        </section>
+    <section class="site-card">
+      <h3>개발</h3>
+      <p>코딩 필수 링크</p>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://www.youtube.com/" target="_blank">youtube</a></li>
+        <li><a class="link-button" href="https://github.com" target="_blank">GitHub 저장소</a></li>
+        <li><a class="link-button" href="https://www.google.com/" target="_blank">Google</a></li>
+        <li><a class="link-button" href="https://poki.com/kr"   target="_blank">POKI</a></li>        
+        <li><a class="link-button" href="https://tt.hancomtaja.com/ko"   target="_blank">타자연습</a></li>                
+      </ul>
+      <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
+    </section>
 
-        <section class="site-card">
-            <h3>품질 관리</h3>
-            <p>분석 및 테스트 도구</p>
-            <ul class="link-list">
-                <li><a class="link-button" href="https://www.sonarqube.org/" target="_blank">SonarQube</a></li>
-                <li><a class="link-button" href="https://www.jenkins.io/"    target="_blank">Jenkins CI</a></li>
-                <li><a class="link-button" href="https://snyk.io/"           target="_blank">Snyk Security</a></li>
-            </ul>
-            <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
-        </section>
+    <section class="site-card">
+      <h3>품질 관리</h3>
+      <p>분석 및 테스트 도구</p>
+      <ul class="link-list">
+        <li><a class="link-button" href="http://localhost:5500/" target="_blank">http://localhost:5500/</a></li>
+        <li><a class="link-button" href="http://localhost:8080/" target="_blank">http://localhost:8080/</a></li>
+        <li><a class="link-button" href="http://localhost:8080/h2-console/" target="_blank">http://localhost:8080/h2-console/</a></li>
+      </ul>
+      <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
+    </section>
 
-        <section class="site-card">
-            <h3>운영</h3>
-            <p>모니터링 및 인프라</p>
-            <ul class="link-list">
-                <li><a class="link-button" href="https://grafana.com/"       target="_blank">Grafana 대시보드</a></li>
-                <li><a class="link-button" href="https://aws.amazon.com/"    target="_blank">AWS 콘솔</a></li>
-                <li><a class="link-button" href="https://www.datadoghq.com/" target="_blank">Datadog</a></li>
-            </ul>
-            <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>            
-        </section>
-    </main>
+    <section class="site-card">
+      <h3>운영</h3>
+      <p>모니터링 및 인프라</p>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://grafana.com/" target="_blank">Grafana 대시보드</a></li>
+        <li><a class="link-button" href="https://aws.amazon.com/" target="_blank">AWS 콘솔</a></li>
+        <li><a class="link-button" href="https://www.datadoghq.com/" target="_blank">Datadog</a></li>
+      </ul>
+      <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
+    </section>
+  </main>
 
-    <nav id="cardControls">
-        <button id="prevCard">이전</button>
-        <button id="toggleAll">전체 보기</button>
-        <button id="nextCard">다음</button>
-    </nav>
+  <nav id="cardControls">
+    <button id="prevCard">이전</button>
+    <button id="toggleAll">전체 보기</button>
+    <button id="nextCard">다음</button>
+  </nav>
 
-    <script>
-        // SVG 노이즈 배경을 Base64로 인코딩하여 동적 적용
-        // CSS에서 직접 URL 인코딩하는 것보다 가독성과 유지보수성이 좋습니다.
-        (function() {
-          // 1. 공백을 최소화하여 인코딩 크기 축소 (저사양 기기 메모리 배려)
-          const svgNoise = `<svg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'>
+  <script>
+    // SVG 노이즈 배경을 Base64로 인코딩하여 동적 적용
+    // CSS에서 직접 URL 인코딩하는 것보다 가독성과 유지보수성이 좋습니다.
+    (function () {
+      // 1. 공백을 최소화하여 인코딩 크기 축소 (저사양 기기 메모리 배려)
+      const svgNoise = `<svg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'>
                             <filter id='n'> <feTurbulence  type='fractalNoise' baseFrequency='0.7' /> </filter>
                             <rect width='100%' height='100%' filter='url(#n)' opacity='0.05' />
                             </svg>`;
 
-          // 2. Base64 인코딩
-          const encodedData = btoa(svgNoise);
-          
-          // 3. 스타일 객체를 사용하여 한 번에 적용 (리플로우 방지)
-          Object.assign(document.body.style, {
-            backgroundImage: `url("data:image/svg+xml;base64,${encodedData}")`,
-            backgroundRepeat: "repeat",
-            backgroundAttachment: "fixed", // 스크롤 시에도 질감이 고정되어 실제 종이 느낌 부여
-            backgroundColor: "#fdfdfd"     // 백라이트가 꺼진 킨들의 미색(Warm White) 구현
+      // 2. Base64 인코딩
+      const encodedData = btoa(svgNoise);
+
+      // 3. 스타일 객체를 사용하여 한 번에 적용 (리플로우 방지)
+      Object.assign(document.body.style, {
+        backgroundImage: `url("data:image/svg+xml;base64,${encodedData}")`,
+        backgroundRepeat: "repeat",
+        backgroundAttachment: "fixed", // 스크롤 시에도 질감이 고정되어 실제 종이 느낌 부여
+        backgroundColor: "#fdfdfd"     // 백라이트가 꺼진 킨들의 미색(Warm White) 구현
+      });
+    })();
+
+    (function () {
+      // DOM 요소 참조
+      const cards = Array.from(document.querySelectorAll('.site-card'));
+      const prevBtn = document.getElementById('prevCard');
+      const nextBtn = document.getElementById('nextCard');
+      const toggleAll = document.getElementById('toggleAll');
+      const wrapper = document.querySelector('.site-wrapper');
+
+      // 현재 카드 인덱스 및 전체 보기 상태 관리
+      let index = 0;
+      let isShowAll = true;
+
+      // 화면 상태 업데이트 함수
+      function updateView() {
+        if (isShowAll) {
+          // 전체 보기 모드: 모든 카드를 표시하고 네비게이션 버튼 비활성화
+          wrapper.classList.add('show-all');
+          cards.forEach(c => { c.style.display = 'block'; });
+          prevBtn.disabled = true;
+          nextBtn.disabled = true;
+          toggleAll.textContent = '단일 보기';
+        } else {
+          // 단일 보기 모드: 현재 인덱스의 카드만 표시
+          wrapper.classList.remove('show-all');
+          cards.forEach((c, i) => {
+            c.style.display = i === index ? 'block' : 'none';
           });
-        })();
+          // 첫 번째 혹은 마지막 카드일 경우 이전/다음 버튼 비활성화 처리
+          prevBtn.disabled = index === 0;
+          nextBtn.disabled = index === cards.length - 1;
+          toggleAll.textContent = '전체 보기';
+        }
+      }
 
-        (function() {
-          // DOM 요소 참조
-          const cards = Array.from(document.querySelectorAll('.site-card'));
-          const prevBtn = document.getElementById('prevCard');
-          const nextBtn = document.getElementById('nextCard');
-          const toggleAll = document.getElementById('toggleAll');
-          const wrapper = document.querySelector('.site-wrapper');
-          
-          // 현재 카드 인덱스 및 전체 보기 상태 관리
-          let index = 0;
-          let isShowAll = false;
+      // 버튼 이벤트 리스너 등록
+      prevBtn.addEventListener('click', () => { if (index > 0) { index--; updateView(); } });
+      nextBtn.addEventListener('click', () => { if (index < cards.length - 1) { index++; updateView(); } });
+      toggleAll.addEventListener('click', () => { isShowAll = !isShowAll; updateView(); });
 
-          // 화면 상태 업데이트 함수
-          function updateView() {
-            if (isShowAll) {
-              // 전체 보기 모드: 모든 카드를 표시하고 네비게이션 버튼 비활성화
-              wrapper.classList.add('show-all');
-              cards.forEach(c => { c.style.display = 'block'; });
-              prevBtn.disabled = true;
-              nextBtn.disabled = true;
-              toggleAll.textContent = '단일 보기';
-            } else {
-              // 단일 보기 모드: 현재 인덱스의 카드만 표시
-              wrapper.classList.remove('show-all');
-              cards.forEach((c, i) => {
-                c.style.display = i === index ? 'block' : 'none';
-              });
-              // 첫 번째 혹은 마지막 카드일 경우 이전/다음 버튼 비활성화 처리
-              prevBtn.disabled = index === 0;
-              nextBtn.disabled = index === cards.length - 1;
-              toggleAll.textContent = '전체 보기';
-            }
-          }
+      // 메모장 기능: LocalStorage를 활용하여 입력 내용 저장 및 복원
+      document.querySelectorAll(".card-input").forEach((el, i) => {
+        const storageKey = `memo-card-eink-${i}`;
+        el.value = localStorage.getItem(storageKey) || "";
+        el.addEventListener("input", () => {
+          localStorage.setItem(storageKey, el.value);
+        });
+      });
 
-          // 버튼 이벤트 리스너 등록
-          prevBtn.addEventListener('click', () => { if (index > 0) { index--; updateView(); } });
-          nextBtn.addEventListener('click', () => { if (index < cards.length - 1) { index++; updateView(); } });
-          toggleAll.addEventListener('click', () => { isShowAll = !isShowAll; updateView(); });
-
-          // 메모장 기능: LocalStorage를 활용하여 입력 내용 저장 및 복원
-          document.querySelectorAll(".card-input").forEach((el, i) => {
-            const storageKey = `memo-card-eink-${i}`;
-            el.value = localStorage.getItem(storageKey) || "";
-            el.addEventListener("input", () => {
-              localStorage.setItem(storageKey, el.value);
-            });
-          });
-
-          // 초기 화면 렌더링
-          updateView();
-        })();
-    </script>
+      // 초기 화면 렌더링
+      updateView();
+    })();
+  </script>
 </body>
+
 </html>

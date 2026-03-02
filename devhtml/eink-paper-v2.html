@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>E-Ink 개발 페이퍼</title>
+  <style>
+    :root {
+      --paper-bg: #f0ede8;
+      --ink-black: #1a1a1a;
+      --ink-gray: #555555;
+      --ink-light: #999999;
+      --border-width: 2px;
+      --shadow: 5px 5px 0px var(--ink-black);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background-color: var(--paper-bg);
+      color: var(--ink-black);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 종이 노이즈 질감 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── 레이아웃 ── */
+    .site-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      max-width: 640px;
+      margin: 44px auto 160px;
+      padding: 0 22px;
+    }
+
+    .site-wrapper.show-all {
+      flex-direction: row;
+      flex-wrap: wrap;
+      max-width: 95%;
+    }
+
+    .site-wrapper.show-all .site-card {
+      flex: 1 1 calc(25% - 28px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── 카드 ── */
+    .site-card {
+      padding: 30px;
+      background: #faf8f4;
+      border: var(--border-width) solid var(--ink-black);
+      box-shadow: var(--shadow);
+      transition: transform 0.08s, box-shadow 0.08s;
+    }
+
+    .site-card:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 6px 6px 0px var(--ink-black);
+    }
+
+    /* 카드 헤더 */
+    .card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .site-card h3 {
+      font-size: 25px;
+      font-weight: 900;
+      margin: 0;
+      text-decoration: underline;
+      text-underline-offset: 7px;
+      text-decoration-thickness: 2px;
+    }
+
+    .card-index {
+      font-size: 12px;
+      color: var(--ink-light);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .site-card p {
+      font-size: 14px;
+      color: var(--ink-gray);
+      margin-bottom: 22px;
+    }
+
+    /* ── 링크 리스트 ── */
+    .link-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 22px 0;
+      border-top: var(--border-width) solid var(--ink-black);
+    }
+
+    .link-button {
+      display: block;
+      padding: 11px 6px;
+      text-decoration: none;
+      color: var(--ink-black);
+      font-weight: 700;
+      font-size: 15.5px;
+      border-bottom: 1px solid #ccc;
+      transition: background 0.15s, padding-left 0.15s;
+    }
+
+    .link-button:hover {
+      background: var(--ink-black);
+      color: #faf8f4;
+      padding-left: 14px;
+    }
+
+    .link-button::before {
+      content: "■ ";
+      font-size: 9px;
+      vertical-align: middle;
+      opacity: 0.6;
+    }
+
+    /* ── 메모 영역 ── */
+    .card-input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #c8c4bc;
+      background: transparent;
+      color: var(--ink-black);
+      font-family: inherit;
+      font-size: 14px;
+      height: 112px;
+      resize: none;
+      background-image: linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+      background-size: 100% 1.6em;
+      transition: border 0.15s;
+    }
+
+    .card-input::placeholder {
+      color: var(--ink-light);
+    }
+
+    .card-input:focus {
+      outline: none;
+      border: var(--border-width) solid var(--ink-black);
+    }
+
+    /* ── 하단 컨트롤 ── */
+    #cardControls {
+      position: fixed;
+      left: 50%;
+      bottom: 36px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0;
+      width: 90%;
+      max-width: 440px;
+      background: #faf8f4;
+      border: var(--border-width) solid var(--ink-black);
+      box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.25);
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    #cardControls button {
+      flex: 1;
+      height: 52px;
+      border: none;
+      background: transparent;
+      color: var(--ink-black);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      border-right: var(--border-width) solid var(--ink-black);
+      transition: background 0.12s, color 0.12s;
+      font-family: inherit;
+    }
+
+    #cardControls button:last-child {
+      border-right: none;
+    }
+
+    #cardControls button:hover:not(:disabled) {
+      background: var(--ink-black);
+      color: #faf8f4;
+    }
+
+    #cardControls button:active {
+      background: var(--ink-black);
+      color: #faf8f4;
+    }
+
+    #cardControls button:disabled {
+      color: #bbb;
+      cursor: not-allowed;
+    }
+
+    #toggleAll {
+      background: #e6e2da !important;
+    }
+
+    #toggleAll:hover {
+      background: var(--ink-black) !important;
+      color: #faf8f4 !important;
+    }
+
+    /* 페이지 도트 */
+    .page-dots {
+      position: fixed;
+      left: 50%;
+      bottom: 100px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 7px;
+      z-index: 1000;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border: 1.5px solid var(--ink-black);
+      border-radius: 50%;
+      background: transparent;
+      transition: background 0.15s;
+    }
+
+    .dot.active {
+      background: var(--ink-black);
+    }
+
+    .page-dots.hidden { display: none; }
+
+    @media (max-width: 768px) {
+      .site-wrapper.show-all .site-card { flex: 1 1 100%; }
+      .site-card { padding: 22px 18px; }
+      .site-card h3 { font-size: 21px; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="site-wrapper">
+
+    <section class="site-card">
+      <div class="card-header">
+        <h3>환경설정</h3>
+        <span class="card-index">01 / 04</span>
+      </div>
+      <p>코딩 필수 링크</p>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://chatgpt.com/" target="_blank">chatgpt</a></li>
+        <li><a class="link-button" href="https://gemini.google.com/" target="_blank">gemini</a></li>
+        <li><a class="link-button" href="https://grok.com/" target="_blank">grok</a></li>
+        <li><a class="link-button" href="https://claude.ai/new" target="_blank">claude</a></li>
+      </ul>
+      <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
+    </section>
+
+    <section class="site-card">
+      <div class="card-header">
+        <h3>개발</h3>
+        <span class="card-index">02 / 04</span>
+      </div>
+      <p>코딩 필수 링크</p>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://www.youtube.com/" target="_blank">youtube</a></li>
+        <li><a class="link-button" href="https://github.com" target="_blank">GitHub 저장소</a></li>
+        <li><a class="link-button" href="https://www.google.com/" target="_blank">Google</a></li>
+        <li><a class="link-button" href="https://poki.com/kr"   target="_blank">POKI</a></li>        
+        <li><a class="link-button" href="https://tt.hancomtaja.com/ko"   target="_blank">타자연습</a></li>                            
+      </ul>
+      <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
+    </section>
+
+    <section class="site-card">
+      <div class="card-header">
+        <h3>품질 관리</h3>
+        <span class="card-index">03 / 04</span>
+      </div>
+      <p>분석 및 테스트 도구</p>
+      <ul class="link-list">
+        <li><a class="link-button" href="http://localhost:5500/" target="_blank">localhost:5500</a></li>
+        <li><a class="link-button" href="http://localhost:8080/" target="_blank">localhost:8080</a></li>
+        <li><a class="link-button" href="http://localhost:8080/h2-console/" target="_blank">localhost:8080/h2-console</a></li>
+      </ul>
+      <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
+    </section>
+
+    <section class="site-card">
+      <div class="card-header">
+        <h3>운영</h3>
+        <span class="card-index">04 / 04</span>
+      </div>
+      <p>모니터링 및 인프라</p>
+      <ul class="link-list">
+        <li><a class="link-button" href="https://grafana.com/" target="_blank">Grafana 대시보드</a></li>
+        <li><a class="link-button" href="https://aws.amazon.com/" target="_blank">AWS 콘솔</a></li>
+        <li><a class="link-button" href="https://www.datadoghq.com/" target="_blank">Datadog</a></li>
+      </ul>
+      <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
+    </section>
+
+  </main>
+
+  <!-- 페이지 도트 -->
+  <div class="page-dots" id="pageDots">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+  <nav id="cardControls">
+    <button id="prevCard">이전</button>
+    <button id="toggleAll">전체 보기</button>
+    <button id="nextCard">다음</button>
+  </nav>
+
+  <script>
+    (function () {
+      const cards = Array.from(document.querySelectorAll('.site-card'));
+      const dots = Array.from(document.querySelectorAll('.dot'));
+      const pageDots = document.getElementById('pageDots');
+      const prevBtn = document.getElementById('prevCard');
+      const nextBtn = document.getElementById('nextCard');
+      const toggleAll = document.getElementById('toggleAll');
+      const wrapper = document.querySelector('.site-wrapper');
+
+      let index = 0;
+      let isShowAll = false;
+
+      function updateView() {
+        if (isShowAll) {
+          wrapper.classList.add('show-all');
+          cards.forEach(c => { c.style.display = 'block'; });
+          prevBtn.disabled = true;
+          nextBtn.disabled = true;
+          toggleAll.textContent = '단일 보기';
+          pageDots.classList.add('hidden');
+        } else {
+          wrapper.classList.remove('show-all');
+          cards.forEach((c, i) => {
+            c.style.display = i === index ? 'block' : 'none';
+          });
+          dots.forEach((d, i) => d.classList.toggle('active', i === index));
+          prevBtn.disabled = index === 0;
+          nextBtn.disabled = index === cards.length - 1;
+          toggleAll.textContent = '전체 보기';
+          pageDots.classList.remove('hidden');
+        }
+      }
+
+      prevBtn.addEventListener('click', () => { if (index > 0) { index--; updateView(); } });
+      nextBtn.addEventListener('click', () => { if (index < cards.length - 1) { index++; updateView(); } });
+      toggleAll.addEventListener('click', () => { isShowAll = !isShowAll; updateView(); });
+
+      // 키보드 지원
+      document.addEventListener('keydown', e => {
+        if (isShowAll) return;
+        if (e.key === 'ArrowRight' && index < cards.length - 1) { index++; updateView(); }
+        if (e.key === 'ArrowLeft' && index > 0) { index--; updateView(); }
+      });
+
+      // 메모 저장
+      document.querySelectorAll(".card-input").forEach((el, i) => {
+        const key = `memo-eink-${i}`;
+        el.value = localStorage.getItem(key) || "";
+        el.addEventListener("input", () => localStorage.setItem(key, el.value));
+      });
+
+      updateView();
+    })();
+  </script>
+</body>
+</html>
