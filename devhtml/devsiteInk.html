@@ -5,244 +5,211 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>E-Ink 개발 페이퍼</title>
-  <style>
-    /* =======================
-       전자종이 변수 정의
-       ======================= */
-    :root {
-      --paper-bg: #f4f4f4;
-      /* 약간 미색이 도는 종이색 */
-      --ink-black: #1a1a1a;
-      /* 완전한 검정보다 약간 부드러운 먹색 */
-      --ink-gray: #555555;
-      --border-width: 2px;
-      --grid-minor-color: rgba(0, 0, 0, 0.04);
-      --grid-major-color: rgba(0, 0, 0, 0.075);
-      --grid-line: 1px;
-      --grid-minor-size: 22px;
-      --grid-major-size: 110px;
-    }
+    <style>
+      :root {
+            --paper-bg: #f0ede8;
+            --ink-black: #1a1a1a;
+            --ink-gray: #555555;
+            --ink-light: #999999;
+            --border-width: 2px;
+            --grid-minor-color: rgba(0, 0, 0, 0.025);
+            --grid-major-color: rgba(0, 0, 0, 0.05);
+            --grid-line: 1px;
+            --grid-minor-size: 22px;
+            --grid-major-size: 110px;
+          }
 
-    /* =======================
-       기본 스타일 및 종이 질감
-       ======================= */
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+          * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+          }
 
-    body {
-      font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-      background-color: var(--paper-bg);
-      color: var(--ink-black);
-      line-height: 1.6;
-      font-size: 14px;
-      min-height: 100vh;
-      position: relative;
-      overflow-x: hidden; /* 가로 스크롤 방지 */
-      background-image:
-        linear-gradient(to right, var(--grid-minor-color) var(--grid-line), transparent var(--grid-line)),
-        linear-gradient(to bottom, var(--grid-minor-color) var(--grid-line), transparent var(--grid-line)),
-        linear-gradient(to right, var(--grid-major-color) var(--grid-line), transparent var(--grid-line)),
-        linear-gradient(to bottom, var(--grid-major-color) var(--grid-line), transparent var(--grid-line)),
-        radial-gradient(70rem 45rem at 12% -10%, rgba(15, 118, 110, 0.16), transparent 60%),
-        radial-gradient(60rem 42rem at 90% 12%, rgba(245, 158, 11, 0.13), transparent 60%),
-        linear-gradient(180deg, #f8fbfa 0%, #f5f7f9 45%, #f6f8f6 100%);
-      background-size:
-        var(--grid-minor-size) var(--grid-minor-size),
-        var(--grid-minor-size) var(--grid-minor-size),
-        var(--grid-major-size) var(--grid-major-size),
-        var(--grid-major-size) var(--grid-major-size),
-        auto,
-        auto,
-        auto;
-      background-position:
-        0 0,
-        0 0,
-        0 0,
-        0 0,
-        center,
-        center,
-        center;
-    }
+          body {
+            font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+            background-color: var(--paper-bg);
+            background-image:
+              linear-gradient(to right, var(--grid-minor-color) var(--grid-line), transparent var(--grid-line)),
+              linear-gradient(to bottom, var(--grid-minor-color) var(--grid-line), transparent var(--grid-line)),
+              linear-gradient(to right, var(--grid-major-color) var(--grid-line), transparent var(--grid-line)),
+              linear-gradient(to bottom, var(--grid-major-color) var(--grid-line), transparent var(--grid-line));
+            background-size:
+              var(--grid-minor-size) var(--grid-minor-size),
+              var(--grid-minor-size) var(--grid-minor-size),
+              var(--grid-major-size) var(--grid-major-size),
+              var(--grid-major-size) var(--grid-major-size);
+            color: var(--ink-black);
+            line-height: 1.6;
+            font-size: 14px;
+            min-height: 100vh;
+            overflow-x: hidden;
+          }
 
-    /* 종이 노이즈 질감 */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 9999;
-    }
+          /* =======================
+             레이아웃
+             ======================= */
+          .site-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 650px;
+            margin: 40px auto 160px;
+            padding: 0 20px;
+          }
 
-    /* =======================
-       레이아웃
-       ======================= */
-    .site-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      max-width: 650px;
-      margin: 40px auto 160px;
-      padding: 0 20px;
-    }
+          .site-wrapper.show-all {
+            flex-direction: row;
+            flex-wrap: wrap;
+            max-width: 95%;
+          }
 
-    .site-wrapper.show-all {
-      flex-direction: row;
-      flex-wrap: wrap;
-      max-width: 95%;
-    }
+          .site-wrapper.show-all .site-card {
+            flex: 1 1 calc(25% - 24px);
+            display: flex;
+            flex-direction: column;
+          }
 
-    .site-wrapper.show-all .site-card {
-      flex: 1 1 calc(25% - 24px);
-      display: flex;
-      flex-direction: column;
-    }
+          /* =======================
+             카드 스타일 (전자종이 버전)
+             ======================= */
+          .site-card {
+            padding: 30px;
+            background: white;
+            border: var(--border-width) solid var(--ink-black);
+            /* 그림자 대신 명확한 오프셋 선 사용 가능 */
+            box-shadow: 4px 4px 0px var(--ink-black);
+            transition: transform 0.1s;
+          }
 
-    /* =======================
-       카드 스타일 (전자종이 버전)
-       ======================= */
-    .site-card {
-      padding: 30px;
-      background: white;
-      border: var(--border-width) solid var(--ink-black);
-      /* 그림자 대신 명확한 오프셋 선 사용 가능 */
-      box-shadow: 4px 4px 0px var(--ink-black);
-      transition: transform 0.1s;
-    }
+          .site-card h3 {
+            font-size: 22px;
+            font-weight: 900;
+            margin: 0 0 10px 0;
+            text-decoration: underline;
+            text-underline-offset: 6px;
+          }
 
-    .site-card h3 {
-      font-size: 22px;
-      font-weight: 900;
-      margin: 0 0 10px 0;
-      text-decoration: underline;
-      text-underline-offset: 6px;
-    }
+          .site-card p {
+            font-size: 14px;
+            color: var(--ink-gray);
+            margin-bottom: 25px;
+          }
 
-    .site-card p {
-      font-size: 14px;
-      color: var(--ink-gray);
-      margin-bottom: 25px;
-    }
+          /* =======================
+             링크 리스트 (신문 레이아웃 느낌)
+             ======================= */
+          .link-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            border-top: var(--border-width) solid var(--ink-black);
+          }
 
-    /* =======================
-       링크 리스트 (신문 레이아웃 느낌)
-       ======================= */
-    .link-list {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 20px 0;
-      border-top: var(--border-width) solid var(--ink-black);
-    }
+          .link-button {
+            display: block;
+            padding: 12px 5px;
+            text-decoration: none;
+            color: var(--ink-black);
+            font-weight: 700;
+            font-size: 14px;
+            border-bottom: 1px solid var(--ink-black);
+            transition: background 0.2s;
+          }
 
-    .link-button {
-      display: block;
-      padding: 12px 5px;
-      text-decoration: none;
-      color: var(--ink-black);
-      font-weight: 700;
-      font-size: 14px;
-      border-bottom: 1px solid var(--ink-black);
-      transition: background 0.2s;
-    }
+          .link-button:hover {
+            background: var(--ink-black);
+            color: white;
+          }
 
-    .link-button:hover {
-      background: var(--ink-black);
-      color: white;
-    }
+          .link-button::before {
+            content: "■ ";
+            font-size: 9px;
+            vertical-align: middle;
+          }
 
-    .link-button::before {
-      content: "■ ";
-      font-size: 9px;
-      vertical-align: middle;
-    }
+          /* =======================
+             메모장 (종이 질감 인풋)
+             ======================= */
+          .card-input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid var(--ink-gray);
+            background: transparent;
+            color: var(--ink-black);
+            font-family: inherit;
+            font-size: 14px;
+            height: 120px;
+            resize: none;
+            /* 줄노트 느낌 배경 */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 100% 1.6em;
+          }
 
-    /* =======================
-       메모장 (종이 질감 인풋)
-       ======================= */
-    .card-input {
-      width: 100%;
-      padding: 15px;
-      border: 1px solid var(--ink-gray);
-      background: transparent;
-      color: var(--ink-black);
-      font-family: inherit;
-      font-size: 14px;
-      height: 120px;
-      resize: none;
-      /* 줄노트 느낌 배경 */
-      background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-      background-size: 100% 1.6em;
-    }
+          .card-input:focus {
+            outline: none;
+            border: var(--border-width) solid var(--ink-black);
+          }
 
-    .card-input:focus {
-      outline: none;
-      border: var(--border-width) solid var(--ink-black);
-    }
+          /* =======================
+             하단 컨트롤 (물리 버튼 느낌)
+             ======================= */
+          #cardControls {
+            position: fixed;
+            left: 50%;
+            bottom: 40px;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0;
+            /* 버튼 사이 간격 제거하여 일체감 형성 */
+            width: 90%;
+            max-width: 450px;
+            background: white;
+            border: 3px solid var(--ink-black);
+            box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+          }
 
-    /* =======================
-       하단 컨트롤 (물리 버튼 느낌)
-       ======================= */
-    #cardControls {
-      position: fixed;
-      left: 50%;
-      bottom: 40px;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 0;
-      /* 버튼 사이 간격 제거하여 일체감 형성 */
-      width: 90%;
-      max-width: 450px;
-      background: white;
-      border: 3px solid var(--ink-black);
-      box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
-    }
+          #cardControls button {
+            flex: 1;
+            height: 55px;
+            border: none;
+            background: white;
+            color: var(--ink-black);
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            border-right: 2px solid var(--ink-black);
+          }
 
-    #cardControls button {
-      flex: 1;
-      height: 55px;
-      border: none;
-      background: white;
-      color: var(--ink-black);
-      font-size: 14px;
-      font-weight: 800;
-      cursor: pointer;
-      border-right: 2px solid var(--ink-black);
-    }
+          #cardControls button:last-child {
+            border-right: none;
+          }
 
-    #cardControls button:last-child {
-      border-right: none;
-    }
+          #cardControls button:active {
+            background: var(--ink-black);
+            color: white;
+          }
 
-    #cardControls button:active {
-      background: var(--ink-black);
-      color: white;
-    }
+          #cardControls button:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+          }
 
-    #cardControls button:disabled {
-      color: #ccc;
-      cursor: not-allowed;
-    }
+          #toggleAll {
+            background: #e0e0e0 !important;
+          }
 
-    #toggleAll {
-      background: #e0e0e0 !important;
-    }
+          /* 반응형 */
+          @media (max-width: 768px) {
+            .site-wrapper.show-all .site-card {
+              flex: 1 1 100%;
+            }
 
-    /* 반응형 */
-    @media (max-width: 768px) {
-      .site-wrapper.show-all .site-card {
-        flex: 1 1 100%;
-      }
-
-      .site-card {
-        padding: 20px;
-      }
-    }
-  </style>
-</head>
-
+            .site-card {
+              padding: 20px;
+            }
+          }
+    </style>
+  </head>
 <body>
 
   <main class="site-wrapper">
@@ -255,7 +222,7 @@
         <li><a class="link-button" href="https://chatgpt.com/" target="_blank">chatgpt</a></li>
         <li><a class="link-button" href="https://gemini.google.com/" target="_blank">gemini</a></li>
         <li><a class="link-button" href="https://grok.com/" target="_blank">grok</a></li>
-        <li><a class="link-button" href="https://claude.ai/new" target="_blank">claude</a></li>        
+        <li><a class="link-button" href="https://claude.ai/new" target="_blank">claude</a></li>
       </ul>
       <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
     </section>
@@ -267,8 +234,8 @@
         <li><a class="link-button" href="https://www.youtube.com/" target="_blank">youtube</a></li>
         <li><a class="link-button" href="https://github.com" target="_blank">GitHub 저장소</a></li>
         <li><a class="link-button" href="https://www.google.com/" target="_blank">Google</a></li>
-        <li><a class="link-button" href="https://poki.com/kr"   target="_blank">POKI</a></li>        
-        <li><a class="link-button" href="https://tt.hancomtaja.com/ko"   target="_blank">타자연습</a></li>                
+        <li><a class="link-button" href="https://poki.com/kr" target="_blank">POKI</a></li>
+        <li><a class="link-button" href="https://tt.hancomtaja.com/ko" target="_blank">타자연습</a></li>
       </ul>
       <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
     </section>
@@ -279,7 +246,8 @@
       <ul class="link-list">
         <li><a class="link-button" href="http://localhost:5500/" target="_blank">http://localhost:5500/</a></li>
         <li><a class="link-button" href="http://localhost:8080/" target="_blank">http://localhost:8080/</a></li>
-        <li><a class="link-button" href="http://localhost:8080/h2-console/" target="_blank">http://localhost:8080/h2-console/</a></li>
+        <li><a class="link-button" href="http://localhost:8080/h2-console/"
+            target="_blank">http://localhost:8080/h2-console/</a></li>
       </ul>
       <textarea class="card-input" placeholder="메모를 작성하세요..."></textarea>
     </section>
@@ -303,27 +271,24 @@
   </nav>
 
   <script>
-    // SVG 노이즈 배경을 Base64로 인코딩하여 동적 적용
-    // CSS에서 직접 URL 인코딩하는 것보다 가독성과 유지보수성이 좋습니다.
     (function () {
-      // 1. 공백을 최소화하여 인코딩 크기 축소 (저사양 기기 메모리 배려)
-      const svgNoise = `<svg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'>
-                            <filter id='n'> <feTurbulence  type='fractalNoise' baseFrequency='0.7' /> </filter>
-                            <rect width='100%' height='100%' filter='url(#n)' opacity='0.05' />
-                            </svg>`;
+      // Create an element for the noise texture
+      const noiseOverlay = document.createElement('div');
 
-      // 2. Base64 인코딩
-      const encodedData = btoa(svgNoise);
-
-      // 3. 스타일 객체를 사용하여 한 번에 적용 (리플로우 방지)
-      Object.assign(document.body.style, {
-        backgroundImage: `url("data:image/svg+xml;base64,${encodedData}")`,
-        backgroundRepeat: "repeat",
-        backgroundAttachment: "fixed", // 스크롤 시에도 질감이 고정되어 실제 종이 느낌 부여
-        backgroundColor: "#fdfdfd"     // 백라이트가 꺼진 킨들의 미색(Warm White) 구현
+      // Style the overlay to match the original ::before pseudo-element
+      Object.assign(noiseOverlay.style, {
+        position: 'fixed',
+        inset: '0',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E")`,
+        pointerEvents: 'none',
+        zIndex: '9999'
       });
-    })();
 
+      // Append the overlay to the body
+      document.body.appendChild(noiseOverlay);
+    })();
+  </script>
+  <script>
     (function () {
       // DOM 요소 참조
       const cards = Array.from(document.querySelectorAll('.site-card'));
