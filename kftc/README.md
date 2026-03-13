@@ -55,9 +55,9 @@
 
 | 원거래 존재 | 상태코드 | 처리 결과 | 비고 |
 |---|---|---|---|
-| 존재 | `NORMAL` | `REPLY_ORIGINAL` | 멱등 응답 |
-| 존재 | `ERROR` | `REPLY_ORIGINAL` | 멱등 응답 |
-| 존재 | `PROCESSING` | `REPLY_ORIGINAL` | 멱등 응답 |
+| 존재 | `NORMAL` | `REPLY_ORIGINAL` | 입금 멱등 응답 |
+| 존재 | `ERROR` | `REPLY_ORIGINAL` | 입금 멱등 응답 |
+| 존재 | `PROCESSING` | `DROP` | 입금 처리중 전문 무시 |
 | 미존재 | — | `PROCEED` | 입금 신규 처리 |
 
 ---
@@ -66,11 +66,11 @@
 
 | 원거래 존재 | 상태코드 | 처리 결과 | 비고 |
 |---|---|---|---|
-| 존재 | `NORMAL` | `PROCEED` | 취소 처리 진행 |
-| 존재 | `CANCEL_ERROR` | `DROP` | 중복 전문 무시 |
-| 존재 | `PROCESSING` | `REPLY_ORIGINAL` | 멱등 응답 |
-| 존재 | `CANCEL_PROC` | `DROP` | 중복 전문 무시 |
-| 존재 | `CANCEL_NORMAL` | `REPLY_ORIGINAL` | 멱등 응답 |
+| 존재 | `NORMAL` | `PROCEED` |  입금취소 처리 진행 |
+| 존재 | `CANCEL_ERROR` | `PROCEED` |  입금취소 처리 진행 |
+| 존재 | `PROCESSING` | `DROP` | 입금**** 처리중 전문 무시 |
+| 존재 | `CANCEL_PROC` | `DROP` | 입금취소 처리중 전문 무시 |
+| 존재 | `CANCEL_NORMAL` | `REPLY_ORIGINAL` | 입금취소 멱등 응답 |
 | 미존재 | — | `ERROR_NOT_FOUND` | ⚠️ 있으면 안 되는 상황 |
 
 ---
@@ -79,7 +79,7 @@
 
 | 원거래 존재 | 상태코드 | 처리 결과 | 비고 |
 |---|---|---|---|
-| 존재 | — | `DROP` | 취소 전문 선도착 — 무시 |
+| 존재 | — | `DROP` | 출금 전문 무시 (출금취소 유도) |
 | 미존재 | — | `PROCEED` | 출금 신규 처리 |
 
 ---
@@ -88,12 +88,12 @@
 
 | 원거래 존재 | 상태코드 | 처리 결과 | 비고 |
 |---|---|---|---|
-| 존재 | `NORMAL` | `PROCEED` | 취소 처리 진행 |
-| 존재 | `PROCESSING` | `DROP` | 취소 전문 중복 도착 |
-| 존재 | `CANCEL_PROC` | `DROP` | 취소 전문 중복 도착 |
-| 존재 | `CANCEL_NORMAL` | `REPLY_ORIGINAL` | 취소정상 멱등 응답 |
-| 존재 | `ERROR` | `REPLY_ORIGINAL` | 출금오류 시 취소정상 응답 및 저장 |
-| 미존재 | `CANCEL_NORMAL` | `SAVE_REVERSE` | ⚠️ 출금 전문 역전 대비 선행 저장 |
+| 존재 | `NORMAL` | `PROCEED` | 출금 취소 처리 진행 |
+| 존재 | `PROCESSING` | `DROP` | 출금****  처리중 전문 무시 |
+| 존재 | `CANCEL_PROC` | `DROP` | 출금취소 처리중 전문 무시 |
+| 존재 | `CANCEL_NORMAL` | `REPLY_ORIGINAL` | 출금취소정상 멱등 응답 |
+| 존재 | `ERROR` | `REPLY_ORIGINAL` |  출금 취소정상 응답 및 출금 취소응답코드 저장 |
+| 미존재 | `CANCEL_NORMAL` | `SAVE_REVERSE` | ⚠️ 출금 취소정상 응답 및 출금 취소 전문 저장 |
 
 ---
 
