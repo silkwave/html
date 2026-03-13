@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON to DB 변환기</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Consolas', 'D2Coding', monospace;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 1.4rem;
+      color: #89dceb;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #45475a;
+      padding-bottom: 8px;
+    }
+    .row { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
+    label { color: #a6adc8; font-size: 0.85rem; min-width: 120px; }
+    input[type="text"], textarea {
+      background: #313244;
+      border: 1px solid #45475a;
+      border-radius: 4px;
+      color: #cdd6f4;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: #89b4fa;
+    }
+    textarea { height: 200px; resize: vertical; }
+    .btn {
+      background: #89b4fa;
+      color: #1e1e2e;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 20px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    .btn:hover { background: #b4befe; }
+    .btn.secondary { background: #45475a; color: #cdd6f4; }
+    .btn.secondary:hover { background: #585b70; }
+    #resultTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 0.8rem;
+    }
+    #resultTable th {
+      background: #313244;
+      color: #89dceb;
+      padding: 6px 10px;
+      border: 1px solid #45475a;
+      text-align: left;
+      white-space: nowrap;
+    }
+    #resultTable td {
+      padding: 5px 10px;
+      border: 1px solid #313244;
+      color: #cdd6f4;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #resultTable tr:nth-child(even) td { background: #181825; }
+    #resultTable tr:hover td { background: #313244; }
+    .section { margin-bottom: 16px; }
+    #statusMsg { font-size: 0.8rem; margin-top: 8px; min-height: 20px; }
+    .table-wrap { overflow-x: auto; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>📋 JSON → DB 변환기 (as-is)</h1>
+
+  <div class="section">
+    <div class="row">
+      <label>전문관리ID (tmsqMqmtId)</label>
+      <input type="text" id="tmsqMqmtId" placeholder="예: MSG_001" style="max-width:300px;">
+    </div>
+    <div class="row">
+      <label>JSON 입력</label>
+    </div>
+    <textarea id="jsonInput" placeholder='{"key": "value", "nested": {"a": 1}}'></textarea>
+  </div>
+
+  <div>
+    <button class="btn" id="convertBtn">변환 실행</button>
+    <button class="btn secondary" id="downloadBtn">CSV 다운로드</button>
+    <button class="btn secondary" id="clearBtn">초기화</button>
+  </div>
+
+  <div id="statusMsg"></div>
+
+  <div class="table-wrap">
+    <table id="resultTable"></table>
+  </div>
+
+  <script>
+    // ── 상수 ────────────────────────────────────────────────────────────────
+    const COLS = ['seq','path','last_key','desc','type','length','value','parent_seq','depth_level','parent_name'];
+
+    // ── 순수 함수: JSON → 행 데이터 추출 ────────────────────────────────────
+    /**
+     * JSON 객체를 재귀적으로 순회하여 type 필드를 가진 노드를 추출한다.
+     * seqRef = { value: 0 } 를 외부에서 주입받아 전역 변수 없이 seq를 관리한다.
+     */
+    function extractFields(obj, path = 'root', parentSeq = null, seqRef = { value: 0 }) {
+      const result     = [];
+      const currentSeq = seqRef.value++;
+      const pathParts  = path.split('.');
+      const depthLevel = pathParts.length - 1;
+      const lastKey    = pathParts[pathParts.length - 1];
+      const parentName = (depthLevel === 1 && pathParts[0] === 'root')
+        ? ''
+        : pathParts[pathParts.length - 2];
+
+      if (obj.type) {
+        result.push({
+          seq:         currentSeq,
+          path,
+          last_key:    lastKey.trim(),
+          desc:        (obj.desc   || '').trim(),
+          type:        (obj.type   || '').trim(),
+          length:      (obj.length || '').trim(),
+          value:       (obj.value  || '').trim(),
+          parent_seq:  parentSeq,
+          depth_level: depthLevel,
+          parent_name: parentName.trim(),
+        });
+      }
+
+      for (const key of Object.keys(obj)) {
+        const child = obj[key];
+        if (child !== null && typeof child === 'object' && !Array.isArray(child)) {
+          result.push(...extractFields(child, `${path}.${key}`, currentSeq, seqRef));
+        }
+      }
+
+      return result;
+    }
+
+    // ── 순수 함수: 행 배열 → CSV 문자열 ────────────────────────────────────
+    // DOM을 파싱하지 않고 데이터(lastRows)에서 직접 생성한다.
+    function rowsToCsv(rows) {
+      const header = COLS.join(',');
+      const body   = rows.map(r =>
+        COLS.map(c => {
+          const v = String(r[c] ?? '').replace(/"/g, '""');
+          return `"="${v}""`;
+        }).join(',')
+      ).join('\n');
+      return '\uFEFF' + header + '\n' + body;
+    }
+
+    // ── DOM 헬퍼 ────────────────────────────────────────────────────────────
+    function setStatus(msg, color) {
+      const el = document.getElementById('statusMsg');
+      el.textContent = msg;
+      el.style.color = color;
+    }
+
+    function renderTable(rows) {
+      const headerHtml = '<tr>' + COLS.map(c => `<th>${c}</th>`).join('') + '</tr>';
+      const bodyHtml   = rows.map(r =>
+        '<tr>' + COLS.map(c => `<td title="${String(r[c] ?? '')}">${r[c] ?? ''}</td>`).join('') + '</tr>'
+      ).join('');
+      document.getElementById('resultTable').innerHTML = headerHtml + bodyHtml;
+    }
+
+    function downloadBlob(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url  = URL.createObjectURL(blob);
+      const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ── 모듈 상태: 마지막 변환 결과 보관 ───────────────────────────────────
+    let lastRows = [];
+
+    // ── 이벤트 핸들러 ────────────────────────────────────────────────────────
+    document.getElementById('convertBtn').addEventListener('click', () => {
+      const jsonText   = document.getElementById('jsonInput').value;
+      const tmsqMqmtId = document.getElementById('tmsqMqmtId').value.trim();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch (e) {
+        setStatus('❌ JSON 파싱 오류: ' + e.message, '#f38ba8');
+        document.getElementById('resultTable').innerHTML = '';
+        lastRows = [];
+        return;
+      }
+
+      lastRows = extractFields(parsed);
+
+      if (!lastRows.length) {
+        setStatus('⚠️ 추출된 필드가 없습니다. type 필드가 있는지 확인하세요.', '#fab387');
+        document.getElementById('resultTable').innerHTML = '';
+        return;
+      }
+
+      renderTable(lastRows);
+      setStatus(`✅ ${lastRows.length}건 추출 완료 (tmsqMqmtId: ${tmsqMqmtId || '미입력'})`, '#a6e3a1');
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      if (!lastRows.length) {
+        alert('먼저 변환을 실행하세요');
+        return;
+      }
+      downloadBlob(rowsToCsv(lastRows), 'json_to_db_rows.csv', 'text/csv;charset=utf-8;');
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('jsonInput').value       = '';
+      document.getElementById('tmsqMqmtId').value     = '';
+      document.getElementById('resultTable').innerHTML = '';
+      setStatus('', '');
+      lastRows = [];
+    });
+  </script>
+</body>
+</html>
