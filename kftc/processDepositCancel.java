@@ -42,9 +42,9 @@ public void processDepositCancel(DepositCancelRequest request) {
 }
 
 private void handleDepositCancelException(CtxMap ctx) {
-    String               txId    = ctx.getString("txId");
-    DepositCancelRequest request = ctx.getObject("request",   DepositCancelRequest.class);
-    Exception            e       = ctx.getObject("exception", Exception.class);
+    String               txId    = ctx.require("txId");
+    DepositCancelRequest request = ctx.require("request");
+    Exception            e       = ctx.require("exception");
 
     // 원거래 미존재 → REVERSE 저장 및 정상 응답 반환
     if (e instanceof SaveReverseException) {

@@ -50,9 +50,9 @@ public void processWithdrawCancel(WithdrawCancelRequest request) {
 }
 
 private void handleWithdrawCancelException(CtxMap ctx) {
-    String                txId    = ctx.getString("txId");
-    WithdrawCancelRequest request = ctx.getObject("request",   WithdrawCancelRequest.class);
-    Exception             e       = ctx.getObject("exception", Exception.class);
+    String                txId    = ctx.require("txId");
+    WithdrawCancelRequest request = ctx.require("request");
+    Exception             e       = ctx.require("exception");
 
     // 원거래 미존재 → SAVE_REVERSE 저장 및 정상 응답 반환
     if (e instanceof SaveReverseException) {

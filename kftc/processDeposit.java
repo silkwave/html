@@ -43,11 +43,10 @@ public void processDeposit(DepositRequest request) {
         handleDepositException(ctx);
     }
 }
-
 private void handleDepositException(CtxMap ctx) {
-    String         txId    = ctx.getString("txId");
-    DepositRequest request = ctx.getObject("request",   DepositRequest.class);
-    Exception      e       = ctx.getObject("exception", Exception.class);
+    String         txId    = ctx.require("txId");
+    DepositRequest request = ctx.require("request");
+    Exception      e       = ctx.require("exception");
 
     // 최종 확정 상태 → 기존 응답 재전송
     if (e instanceof ReplyOriginalException replyEx) {

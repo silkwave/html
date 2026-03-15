@@ -34,11 +34,10 @@ public void processWithdraw(WithdrawRequest request) {
         handleWithdrawException(ctx);
     }
 }
-
 private void handleWithdrawException(CtxMap ctx) {
-    String          txId    = ctx.getString("txId");
-    WithdrawRequest request = ctx.getObject("request",   WithdrawRequest.class);
-    Exception       e       = ctx.getObject("exception", Exception.class);
+    String          txId    = ctx.require("txId");
+    WithdrawRequest request = ctx.require("request");
+    Exception       e       = ctx.require("exception");
 
     // 원거래 존재 → 상태 무관 DROP
     if (e instanceof DuplicateTxException dupEx) {

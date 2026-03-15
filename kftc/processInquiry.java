@@ -37,9 +37,9 @@ public void processInquiry(InquiryRequest request) {
 }
 
 private void handleInquiryException(CtxMap ctx) {
-    String         txId    = ctx.getString("txId");
-    InquiryRequest request = ctx.getObject("request",   InquiryRequest.class);
-    Exception      e       = ctx.getObject("exception", Exception.class);
+    String         txId    = ctx.require("txId");
+    InquiryRequest request = ctx.require("request");
+    Exception      e       = ctx.require("exception");
 
     // 중복 전문 → DROP 처리
     if (e instanceof DuplicateTxException dupEx) {
