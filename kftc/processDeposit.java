@@ -13,15 +13,8 @@ public void processDeposit(DepositRequest request) {
         if (existingTx != null) {
             BizStatus status = existingTx.getStatus();
 
-            // 최종 확정 상태 → 기존 응답 재전송
-            if (isFinalStatus(status)) {
-                throw new ReplyOriginalException(txId, status, existingTx);
-            }
-
-            // 처리 중 → DROP
-            if (status == BizStatus.PROCESSING) {
-                throw new DuplicateTxException(txId, status);
-            }
+            if (isFinalStatus(status))           throw new ReplyOriginalException(txId, status, existingTx); // 최종 확정 → 재전송
+            if (status == BizStatus.PROCESSING)  throw new DuplicateTxException(txId, status);               // 처리 중 → DROP
         }
 
         // ── 3. 신규 요청 → PROCESSING 선기록 (방어막 형성) ────────────
@@ -43,6 +36,7 @@ public void processDeposit(DepositRequest request) {
         handleDepositException(ctx);
     }
 }
+
 private void handleDepositException(CtxMap ctx) {
     String         txId    = ctx.require("txId");
     DepositRequest request = ctx.require("request");
@@ -55,15 +49,14 @@ private void handleDepositException(CtxMap ctx) {
         return;
     }
 
-    // 중복 전문 → DROP 처리
+    // 진행 중 중복 전문 → DROP
     if (e instanceof DuplicateTxException dupEx) {
         log.info("[DEPOSIT] DROP - txId={}, status={}", txId, dupEx.getStatus());
         return;
     }
 
     // 모든 예외 → ERROR 저장 및 오류 전문 전송
-    log.error("[DEPOSIT] 예외 발생 - txId={}, reason={}", txId, e.getMessage(), e);
-
+    log.error("[DEPOSIT] ERROR - txId={}, reason={}", txId, e.getMessage(), e);
     txRepository.updateStatus(txId, BizStatus.ERROR, e.getMessage());
     sendErrorResponse(request, e);
 }

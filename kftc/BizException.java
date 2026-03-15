@@ -43,6 +43,13 @@ public class BizException extends RuntimeException {
         }
     }
 
+    // ── CANCEL_NORMAL_FOR_ERROR ────────────────────────────────────────────
+    public static class CancelNormalForErrorException extends BizException {
+        public CancelNormalForErrorException(String txId) {
+            super(txId, BizStatus.ERROR, null, "출금실패건 취소정상처리 - txId=" + txId);
+        }
+    }
+
     // ── CANCEL ─────────────────────────────────────────────────────────────
     public static class CancelException extends BizException {
         public CancelException(String message, Throwable cause) {

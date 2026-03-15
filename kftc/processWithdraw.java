@@ -10,7 +10,7 @@ public void processWithdraw(WithdrawRequest request) {
         TxRecord existingTx = txRepository.findByTxIdForUpdate(txId);
 
         // ── 2. 원거래 존재 → 상태 무관 무조건 DROP ─────────────────────
-        // 출금은 금전적 리스크 최우선 — 정정 필요 시 출금취소 후 재출금
+        //    출금은 금전적 리스크 최우선 — 정정 필요 시 출금취소 후 재출금
         if (existingTx != null) {
             throw new DuplicateTxException(txId, existingTx.getStatus());
         }
@@ -22,7 +22,7 @@ public void processWithdraw(WithdrawRequest request) {
                 .status(BizStatus.PROCESSING)
                 .build());
 
-        // ── 4. 출금 실행 ────────────────────────────────────────────────
+        // ── 4. 출금 실행 → NORMAL 저장 및 정상 전문 전송 ──────────────
         withdrawService.execute(request);
 
         txRepository.updateStatus(txId, BizStatus.NORMAL, null);
@@ -34,6 +34,7 @@ public void processWithdraw(WithdrawRequest request) {
         handleWithdrawException(ctx);
     }
 }
+
 private void handleWithdrawException(CtxMap ctx) {
     String          txId    = ctx.require("txId");
     WithdrawRequest request = ctx.require("request");
@@ -46,7 +47,7 @@ private void handleWithdrawException(CtxMap ctx) {
     }
 
     // 출금 실패 → ERROR 저장 및 오류 전문 전송
-    log.warn("[WITHDRAW] ERROR - txId={}, reason={}", txId, e.getMessage());
+    log.error("[WITHDRAW] ERROR - txId={}, reason={}", txId, e.getMessage(), e);
     txRepository.updateStatus(txId, BizStatus.ERROR, e.getMessage());
     sendErrorResponse(request, e);
 }

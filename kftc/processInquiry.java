@@ -10,11 +10,8 @@ public void processInquiry(InquiryRequest request) {
         TxRecord existingTx = txRepository.findByTxId(txId);
 
         // ── 2. 원거래 존재 → DROP ──────────────────────────────────────
-        if (existingTx != null) {
-            BizStatus status = existingTx.getStatus();
-            if (isDuplicate(status)) {
-                throw new DuplicateTxException(txId, status);
-            }
+        if (existingTx != null && isDuplicate(existingTx.getStatus())) {
+            throw new DuplicateTxException(txId, existingTx.getStatus());
         }
 
         // ── 3. 원거래 미존재 → 조회 실행 ──────────────────────────────
@@ -41,22 +38,20 @@ private void handleInquiryException(CtxMap ctx) {
     InquiryRequest request = ctx.require("request");
     Exception      e       = ctx.require("exception");
 
-    // 중복 전문 → DROP 처리
+    // 중복 전문 → DROP
     if (e instanceof DuplicateTxException dupEx) {
         log.info("[INQUIRY] DROP - txId={}, status={}", txId, dupEx.getStatus());
         return;
     }
 
     // 모든 예외 → ERROR 저장 및 오류 전문 전송
-    log.error("[INQUIRY] 예외 발생 - txId={}, reason={}", txId, e.getMessage(), e);
-
+    log.error("[INQUIRY] ERROR - txId={}, reason={}", txId, e.getMessage(), e);
     txRepository.save(TxRecord.builder()
             .txId(txId)
             .txType(TxType.INQUIRY)
             .status(BizStatus.ERROR)
             .errorMessage(e.getMessage())
             .build());
-
     sendErrorResponse(request, e);
 }
 

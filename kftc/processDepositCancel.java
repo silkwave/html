@@ -9,7 +9,7 @@ public void processDepositCancel(DepositCancelRequest request) {
         // ── 1. 원거래 조회 (SELECT FOR UPDATE NOWAIT) ──────────────────
         TxRecord existingTx = txRepository.findByTxIdForUpdate(txId);
 
-        // ── 2. 원거래 미존재 → REVERSE 예외 throw ──────────────────────
+        // ── 2. 원거래 미존재 → REVERSE ─────────────────────────────────
         if (existingTx == null) {
             throw new SaveReverseException(txId);
         }
@@ -17,17 +17,11 @@ public void processDepositCancel(DepositCancelRequest request) {
         // ── 3. 원거래 존재 → 상태 분기 ────────────────────────────────
         BizStatus status = existingTx.getStatus();
 
-        // 진행 중 → DROP
-        if (isInProgress(status)) {
-            throw new DuplicateTxException(txId, status);
-        }
+        if (isInProgress(status))              throw new DuplicateTxException(txId, status);               // 진행 중 → DROP
+        if (status == BizStatus.CANCEL_NORMAL) throw new ReplyOriginalException(txId, status, existingTx); // 취소 완료 → 재전송
+        if (status == BizStatus.ERROR)         throw new CancelNormalForErrorException(txId);              // 입금 실패 → 취소정상
 
-        // 취소 완료 → 기존 응답 재전송
-        if (status == BizStatus.CANCEL_NORMAL) {
-            throw new ReplyOriginalException(txId, status, existingTx);
-        }
-
-        // ── 4. NORMAL / CANCEL_ERROR → CANCEL_PROC 선기록 후 취소 실행
+        // ── 4. NORMAL / CANCEL_ERROR → CANCEL_PROC 선기록 후 취소 실행 ─
         txRepository.updateStatus(txId, BizStatus.CANCEL_PROC, null);
         depositCancelService.execute(request, existingTx);
 
@@ -46,7 +40,7 @@ private void handleDepositCancelException(CtxMap ctx) {
     DepositCancelRequest request = ctx.require("request");
     Exception            e       = ctx.require("exception");
 
-    // 원거래 미존재 → REVERSE 저장 및 정상 응답 반환
+    // 원거래 미존재 → SAVE_REVERSE 저장 및 정상 응답
     if (e instanceof SaveReverseException) {
         log.warn("[DEPOSIT_CANCEL] REVERSE - txId={} (원거래 미존재)", txId);
         txRepository.save(TxRecord.builder()
@@ -59,7 +53,7 @@ private void handleDepositCancelException(CtxMap ctx) {
         return;
     }
 
-    // 중복 전문 → DROP
+    // 진행 중 중복 전문 → DROP
     if (e instanceof DuplicateTxException dupEx) {
         log.info("[DEPOSIT_CANCEL] DROP - txId={}, status={}", txId, dupEx.getStatus());
         return;
@@ -69,6 +63,14 @@ private void handleDepositCancelException(CtxMap ctx) {
     if (e instanceof ReplyOriginalException replyEx) {
         log.info("[DEPOSIT_CANCEL] REPLY_ORIGINAL - txId={}", txId);
         sendOriginalResponse(request, replyEx.getExistingTx());
+        return;
+    }
+
+    // 입금 실패 건 → 취소정상 처리 (취소할 금액 없음)
+    if (e instanceof CancelNormalForErrorException) {
+        log.info("[DEPOSIT_CANCEL] CANCEL_NORMAL (입금 ERROR 건) - txId={}", txId);
+        txRepository.updateStatus(txId, BizStatus.CANCEL_NORMAL, "입금실패건_취소정상처리");
+        sendNormalResponse(request);
         return;
     }
 
