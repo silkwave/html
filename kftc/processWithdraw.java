@@ -1,6 +1,10 @@
 public void processWithdraw(WithdrawRequest request) {
     String txId = request.getTxId();
 
+    CtxMap ctx = new CtxMap();
+    ctx.put("txId",    txId)
+       .put("request", request);
+
     try {
         // ── 1. 원거래 조회 (SELECT FOR UPDATE NOWAIT) ──────────────────
         TxRecord existingTx = txRepository.findByTxIdForUpdate(txId);
@@ -26,16 +30,24 @@ public void processWithdraw(WithdrawRequest request) {
         sendNormalResponse(request);
 
     } catch (Exception e) {
-
-        // 원거래 존재 → 상태 무관 DROP
-        if (e instanceof DuplicateTxException dupEx) {
-            log.warn("[WITHDRAW] DROP - txId={}, status={}", txId, dupEx.getStatus());
-            return;
-        }
-
-        // 출금 실패 → ERROR 저장 및 오류 전문 전송
-        log.warn("[WITHDRAW] ERROR - txId={}, reason={}", txId, e.getMessage());
-        txRepository.updateStatus(txId, BizStatus.ERROR, e.getMessage());
-        sendErrorResponse(request, e);
+        ctx.put("exception", e);
+        handleWithdrawException(ctx);
     }
+}
+
+private void handleWithdrawException(CtxMap ctx) {
+    String          txId    = ctx.getString("txId");
+    WithdrawRequest request = ctx.getObject("request",   WithdrawRequest.class);
+    Exception       e       = ctx.getObject("exception", Exception.class);
+
+    // 원거래 존재 → 상태 무관 DROP
+    if (e instanceof DuplicateTxException dupEx) {
+        log.warn("[WITHDRAW] DROP - txId={}, status={}", txId, dupEx.getStatus());
+        return;
+    }
+
+    // 출금 실패 → ERROR 저장 및 오류 전문 전송
+    log.warn("[WITHDRAW] ERROR - txId={}, reason={}", txId, e.getMessage());
+    txRepository.updateStatus(txId, BizStatus.ERROR, e.getMessage());
+    sendErrorResponse(request, e);
 }

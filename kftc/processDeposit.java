@@ -1,6 +1,10 @@
 public void processDeposit(DepositRequest request) {
     String txId = request.getTxId();
 
+    CtxMap ctx = new CtxMap();
+    ctx.put("txId",    txId)
+       .put("request", request);
+
     try {
         // ── 1. 원거래 조회 (SELECT FOR UPDATE NOWAIT) ──────────────────
         TxRecord existingTx = txRepository.findByTxIdForUpdate(txId);
@@ -35,26 +39,34 @@ public void processDeposit(DepositRequest request) {
         sendNormalResponse(request);
 
     } catch (Exception e) {
-
-        // 최종 확정 상태 → 기존 응답 재전송
-        if (e instanceof ReplyOriginalException replyEx) {
-            log.info("[DEPOSIT] REPLY_ORIGINAL - txId={}, status={}", txId, replyEx.getStatus());
-            sendOriginalResponse(request, replyEx.getExistingTx());
-            return;
-        }
-
-        // 중복 전문 → DROP 처리
-        if (e instanceof DuplicateTxException dupEx) {
-            log.info("[DEPOSIT] DROP - txId={}, status={}", txId, dupEx.getStatus());
-            return;
-        }
-
-        // 모든 예외 → ERROR 저장 및 오류 전문 전송
-        log.error("[DEPOSIT] 예외 발생 - txId={}, reason={}", txId, e.getMessage(), e);
-
-        txRepository.updateStatus(txId, BizStatus.ERROR, e.getMessage());
-        sendErrorResponse(request, e);
+        ctx.put("exception", e);
+        handleDepositException(ctx);
     }
+}
+
+private void handleDepositException(CtxMap ctx) {
+    String         txId    = ctx.getString("txId");
+    DepositRequest request = ctx.getObject("request",   DepositRequest.class);
+    Exception      e       = ctx.getObject("exception", Exception.class);
+
+    // 최종 확정 상태 → 기존 응답 재전송
+    if (e instanceof ReplyOriginalException replyEx) {
+        log.info("[DEPOSIT] REPLY_ORIGINAL - txId={}, status={}", txId, replyEx.getStatus());
+        sendOriginalResponse(request, replyEx.getExistingTx());
+        return;
+    }
+
+    // 중복 전문 → DROP 처리
+    if (e instanceof DuplicateTxException dupEx) {
+        log.info("[DEPOSIT] DROP - txId={}, status={}", txId, dupEx.getStatus());
+        return;
+    }
+
+    // 모든 예외 → ERROR 저장 및 오류 전문 전송
+    log.error("[DEPOSIT] 예외 발생 - txId={}, reason={}", txId, e.getMessage(), e);
+
+    txRepository.updateStatus(txId, BizStatus.ERROR, e.getMessage());
+    sendErrorResponse(request, e);
 }
 
 private boolean isFinalStatus(BizStatus status) {
