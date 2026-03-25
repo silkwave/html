@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>E-Ink 개발 페이퍼</title>
+    <style>
+        /* 1. 기본 설정: 성능을 위해 변수를 최소화하고 단순 색상 사용 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #ffffff;
+            /* 격자 무늬: 최소한의 코드로 구현 */
+            background-image: linear-gradient(#eeeeee 1px, transparent 1px),
+                linear-gradient(90deg, #eeeeee 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #000000;
+            font-family: sans-serif;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        /* 2. 헤더: 명확한 구분선 */
+        .site-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .site-header__title {
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .site-header__date {
+            font-size: 12px;
+        }
+
+        /* 3. 카드 그리드 */
+        .card-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-bottom: 100px;
+        }
+
+        .card-grid--expanded {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        /* 4. 카드: 테두리 중심 디자인 (E-Ink에서 가장 선명함) */
+        .card {
+            background: #fff;
+            border: 1px solid #000;
+            margin-bottom: -1px;
+            /* 테두리 중첩 방지 */
+            padding: 15px;
+        }
+
+        .card__header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #000;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+        }
+
+        .card__title {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .card__num,
+        .card__tag {
+            font-size: 11px;
+            color: #666;
+        }
+
+        /* 5. 링크 버튼: 클릭 영역 최적화 */
+        .link-list {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .link-list li {
+            margin-bottom: 5px;
+        }
+
+        .link-list__btn {
+            display: block;
+            border: 1px solid #000;
+            border-radius: 20px;
+            padding: 6px 12px;
+            text-decoration: none;
+            color: #000;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        /* E-Ink에서는 hover보다 active(누를 때) 반응이 중요 */
+        .link-list__btn:active {
+            background: #000;
+            color: #fff;
+        }
+
+        .link-list__btn:hover {
+            background-color: #000;
+            color: #fff;
+        }
+
+        /* 6. 메모장: 실제 종이 느낌의 줄 간격 */
+        .card__memo-label {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .card__memo-input {
+            width: 100%;
+            height: 80px;
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-size: 13px;
+            resize: none;
+            /* 줄 노트 효과 */
+            background: repeating-linear-gradient(transparent, transparent 23px, #eee 23px, #eee 24px);
+            line-height: 24px;
+        }
+
+        /* 7. 하단 네비게이션: 고정 위치 및 고대비 */
+        .page-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            background: #fff;
+            border: 2px solid #000;
+            z-index: 100;
+        }
+
+        .page-nav__btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-right: 1px solid #000;
+        }
+
+        .page-nav__btn:last-child {
+            border-right: none;
+        }
+
+        .page-nav__btn:disabled {
+            color: #ccc;
+        }
+
+        .page-nav__indicator {
+            position: fixed;
+            bottom: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 2px 10px;
+            font-size: 11px;
+            border-radius: 10px;
+        }
+
+        .page-nav__indicator--hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===================== HEADER ===================== -->
+    <header class="site-header">
+        <span class="site-header__title">Dev Paper</span>
+        <span class="site-header__date" id="js-header-date"></span>
+    </header>
+
+    <!-- ===================== CARD GRID ===================== -->
+    <main class="card-grid" id="js-card-grid">
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__num">01</span>
+                <h2 class="card__title">환경설정</h2>
+                <span class="card__tag">AI</span>
+            </div>
+            <ul class="link-list">
+                <li><a class="link-list__btn" href="https://chatgpt.com/" target="_blank">ChatGPT</a></li>
+                <li><a class="link-list__btn" href="https://gemini.google.com/" target="_blank">Gemini</a></li>
+                <li><a class="link-list__btn" href="https://grok.com/" target="_blank">Grok</a></li>
+                <li><a class="link-list__btn" href="https://claude.ai/new" target="_blank">Claude</a></li>
+            </ul>
+            <p class="card__memo-label">Memo</p>
+            <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
+        </section>
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__num">02</span>
+                <h2 class="card__title">개발</h2>
+                <span class="card__tag">Dev</span>
+            </div>
+            <ul class="link-list">
+                <li><a class="link-list__btn" href="https://www.youtube.com/" target="_blank">YouTube</a></li>
+                <li><a class="link-list__btn" href="https://github.com" target="_blank">GitHub</a></li>
+                <li><a class="link-list__btn" href="https://www.google.com/" target="_blank">Google</a></li>
+                <li><a class="link-list__btn" href="https://poki.com/kr" target="_blank">Poki</a></li>
+                <li><a class="link-list__btn" href="https://tt.hancomtaja.com/ko" target="_blank">타자연습</a></li>
+            </ul>
+            <p class="card__memo-label">Memo</p>
+            <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
+        </section>
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__num">03</span>
+                <h2 class="card__title">품질 관리</h2>
+                <span class="card__tag">QA</span>
+            </div>
+            <ul class="link-list">
+                <li><a class="link-list__btn" href="http://localhost:5500/" target="_blank">localhost:5500</a></li>
+                <li><a class="link-list__btn" href="http://localhost:8080/" target="_blank">localhost:8080</a></li>
+                <li><a class="link-list__btn" href="http://localhost:8080/h2-console/" target="_blank">localhost:8080 /
+                        h2-console</a></li>
+            </ul>
+            <p class="card__memo-label">Memo</p>
+            <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
+        </section>
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__num">04</span>
+                <h2 class="card__title">운영</h2>
+                <span class="card__tag">Ops</span>
+            </div>
+            <ul class="link-list">
+                <li><a class="link-list__btn" href="https://grafana.com/" target="_blank">Grafana</a></li>
+                <li><a class="link-list__btn" href="https://aws.amazon.com/" target="_blank">AWS Console</a></li>
+                <li><a class="link-list__btn" href="https://www.datadoghq.com/" target="_blank">Datadog</a></li>
+            </ul>
+            <p class="card__memo-label">Memo</p>
+            <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
+        </section>
+
+    </main>
+
+    <!-- ===================== PAGE NAV ===================== -->
+    <p class="page-nav__indicator page-nav__indicator--hidden" id="js-indicator"></p>
+
+    <nav class="page-nav" aria-label="카드 네비게이션">
+        <button class="page-nav__btn" id="js-prev" disabled aria-label="이전 카드">← 이전</button>
+        <button class="page-nav__btn page-nav__btn--toggle" id="js-toggle">단일 보기</button>
+        <button class="page-nav__btn" id="js-next" disabled aria-label="다음 카드">다음 →</button>
+    </nav>
+
+
+    <script>
+        'use strict';
+
+        /* ----------------------------------------------------------
+           헤더 날짜
+           ---------------------------------------------------------- */
+        (function initDate() {
+            const el = document.getElementById('js-header-date');
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            el.textContent = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())}`;
+        }());
+
+        /* ----------------------------------------------------------
+           카드 네비게이션
+           ---------------------------------------------------------- */
+        (function initCardNav() {
+            const STORAGE_PREFIX = 'devpaper-memo-';
+            const CSS_EXPANDED = 'card-grid--expanded';
+            const CSS_HIDDEN = 'page-nav__indicator--hidden';
+
+            const grid = document.getElementById('js-card-grid');
+            const prevBtn = document.getElementById('js-prev');
+            const nextBtn = document.getElementById('js-next');
+            const toggleBtn = document.getElementById('js-toggle');
+            const indicator = document.getElementById('js-indicator');
+            const cards = Array.from(grid.querySelectorAll('.card'));
+            const total = cards.length;
+
+            let currentIndex = 0;
+            let isExpanded = true;
+
+            /* 뷰 갱신 */
+            function render() {
+                if (isExpanded) {
+                    grid.classList.add(CSS_EXPANDED);
+                    cards.forEach((c) => { c.style.display = ''; });
+                    prevBtn.disabled = true;
+                    nextBtn.disabled = true;
+                    toggleBtn.textContent = '단일 보기';
+                    indicator.classList.add(CSS_HIDDEN);
+                    return;
+                }
+
+                grid.classList.remove(CSS_EXPANDED);
+
+                cards.forEach((c, i) => {
+                    const isActive = i === currentIndex;
+                    c.style.display = isActive ? '' : 'none';
+
+                    /* 진입 애니메이션 재실행 */
+                    if (isActive) {
+                        c.style.animation = 'none';
+                        void c.offsetHeight; /* reflow */
+                        c.style.animation = '';
+                    }
+                });
+
+                prevBtn.disabled = currentIndex === 0;
+                nextBtn.disabled = currentIndex === total - 1;
+                toggleBtn.textContent = '전체 보기';
+                indicator.textContent = `${currentIndex + 1} / ${total}`;
+                indicator.classList.remove(CSS_HIDDEN);
+            }
+
+            /* 이벤트 */
+            prevBtn.addEventListener('click', () => {
+                if (currentIndex > 0) { currentIndex--; render(); }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (currentIndex < total - 1) { currentIndex++; render(); }
+            });
+
+            toggleBtn.addEventListener('click', () => {
+                isExpanded = !isExpanded;
+                render();
+            });
+
+            /* 메모 LocalStorage 동기화 */
+            grid.querySelectorAll('.card__memo-input').forEach((el, i) => {
+                const key = `${STORAGE_PREFIX}${i}`;
+                el.value = localStorage.getItem(key) ?? '';
+                el.addEventListener('input', () => localStorage.setItem(key, el.value));
+            });
+
+            render();
+        }());
+    </script>
+</body>
+
+</html>
