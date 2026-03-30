@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>E-Ink 개발 페이퍼</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── 토큰 ─────────────────────────────────────────── */
+        :root {
+            --ink:        #0a0a0a;
+            --ink-mid:    #3a3a3a;
+            --ink-faint:  #888;
+            --paper:      #f5f2ec;
+            --paper-dark: #e8e4dc;
+            --rule:       #c0bbb2;
+            --rule-heavy: #6a6560;
+            --accent:     #1a1a1a;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'Noto Sans KR', sans-serif;
+        }
+
+        /* ── 리셋 ──────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ── 바디: 종이 질감 배경 ─────────────────────────── */
+        body {
+            background-color: var(--paper);
+            /* 미세 노이즈 질감 (SVG 필터 없이 CSS만으로) */
+            background-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"),
+                linear-gradient(var(--rule) 1px, transparent 1px),
+                linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+            background-size: 300px 300px, 24px 24px, 24px 24px;
+            color: var(--ink);
+            font-family: var(--sans);
+            line-height: 1.6;
+            padding: 24px 20px 120px;
+            min-height: 100vh;
+        }
+
+        /* ── 헤더 ─────────────────────────────────────────── */
+        .site-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 10px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        /* 헤더 상단 얇은 줄 (신문 느낌) */
+        .site-header::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 0; right: 0;
+            height: 1px;
+            background: var(--ink);
+        }
+
+        .site-header__title {
+            font-family: var(--mono);
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .site-header__meta {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+        }
+
+        .site-header__date {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--ink-mid);
+            letter-spacing: 1px;
+        }
+
+        .site-header__vol {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--ink-faint);
+            letter-spacing: 1px;
+        }
+
+        /* ── 카드 그리드 ───────────────────────────────────── */
+        .card-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .card-grid--expanded {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        /* ── 카드 ─────────────────────────────────────────── */
+        .card {
+            background: var(--paper);
+            border: 1px solid var(--ink);
+            margin-bottom: -1px;
+            padding: 0;
+            position: relative;
+            /* 잉크 인쇄 그림자 느낌 */
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.10);
+            transition: box-shadow 0.15s;
+        }
+
+        .card-grid--expanded .card {
+            margin-bottom: 0;
+        }
+
+        /* 카드 번호 — 신문 섹션 넘버 스타일 */
+        .card__header {
+            display: grid;
+            grid-template-columns: 32px 1fr auto;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--ink);
+            padding: 10px 14px;
+            background: var(--paper-dark);
+        }
+
+        .card__num {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--ink-faint);
+            letter-spacing: 1px;
+        }
+
+        .card__title {
+            font-family: var(--sans);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .card__tag {
+            font-family: var(--mono);
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--paper);
+            background: var(--ink);
+            padding: 2px 6px;
+        }
+
+        /* ── 링크 리스트 ───────────────────────────────────── */
+        .card__body {
+            padding: 12px 14px;
+        }
+
+        .link-list {
+            list-style: none;
+            margin-bottom: 14px;
+        }
+
+        .link-list li {
+            margin-bottom: 4px;
+        }
+
+        .link-list__btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--rule-heavy);
+            border-radius: 20px;
+            padding: 7px 14px;
+            text-decoration: none;
+            color: var(--ink);
+            font-family: var(--mono);
+            font-size: 12px;
+            background: transparent;
+            transition: background 0.1s, color 0.1s, border-color 0.1s;
+            position: relative;
+            letter-spacing: 0.5px;
+        }
+
+        /* 화살표 접두사 */
+        .link-list__btn::before {
+            content: '›';
+            font-size: 14px;
+            line-height: 1;
+            color: var(--ink-faint);
+            transition: color 0.1s;
+            flex-shrink: 0;
+        }
+
+        .link-list__btn:hover,
+        .link-list__btn:active {
+            background: var(--ink);
+            color: var(--paper);
+            border-color: var(--ink);
+        }
+
+        .link-list__btn:hover::before,
+        .link-list__btn:active::before {
+            color: var(--paper);
+        }
+
+        /* ── 메모 ─────────────────────────────────────────── */
+        .card__memo-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            margin-bottom: 6px;
+            border-top: 1px dashed var(--rule);
+            padding-top: 10px;
+        }
+
+        .card__memo-input {
+            width: 100%;
+            height: 76px;
+            border: none;
+            border-left: 2px solid var(--rule-heavy);
+            padding: 6px 8px;
+            font-family: var(--mono);
+            font-size: 12px;
+            resize: none;
+            background: repeating-linear-gradient(
+                transparent,
+                transparent 23px,
+                var(--rule) 23px,
+                var(--rule) 24px
+            );
+            line-height: 24px;
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .card__memo-input:focus {
+            border-left-color: var(--ink);
+        }
+
+        /* ── 하단 네비 ─────────────────────────────────────── */
+        .page-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 420px;
+            display: flex;
+            background: var(--paper);
+            border: 2px solid var(--ink);
+            box-shadow: 3px 3px 0 var(--ink);
+            z-index: 100;
+        }
+
+        .page-nav__btn {
+            flex: 1;
+            padding: 13px;
+            border: none;
+            background: none;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-right: 1px solid var(--rule-heavy);
+            color: var(--ink);
+            transition: background 0.1s, color 0.1s;
+        }
+
+        .page-nav__btn:last-child { border-right: none; }
+
+        .page-nav__btn:hover:not(:disabled) {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        .page-nav__btn:disabled {
+            color: var(--rule);
+            cursor: default;
+        }
+
+        .page-nav__btn--toggle {
+            border-right: 1px solid var(--rule-heavy);
+            letter-spacing: 1.5px;
+        }
+
+        .page-nav__indicator {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--ink);
+            color: var(--paper);
+            padding: 3px 12px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 2px;
+            z-index: 100;
+        }
+
+        .page-nav__indicator--hidden { display: none; }
+
+        /* ── 카드 진입 애니메이션 ─────────────────────────── */
+        @keyframes ink-in {
+            from { opacity: 0; filter: blur(1px); }
+            to   { opacity: 1; filter: blur(0); }
+        }
+
+        .card { animation: ink-in 0.25s ease both; }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── HEADER ── -->
+    <header class="site-header">
+        <span class="site-header__title">Dev Paper</span>
+        <div class="site-header__meta">
+            <span class="site-header__vol">VOL. 1</span>
+            <span class="site-header__date" id="js-header-date"></span>
+        </div>
+    </header>
+
+    <!-- ── CARD GRID ── -->
+    <main class="card-grid" id="js-card-grid">
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__num">01</span>
+                <h2 class="card__title">환경설정</h2>
+                <span class="card__tag">AI</span>
+            </div>
+            <div class="card__body">
+                <ul class="link-list">
+                    <li><a class="link-list__btn" href="https://chatgpt.com/" target="_blank">ChatGPT</a></li>
+                    <li><a class="link-list__btn" href="https://gemini.google.com/" target="_blank">Gemini</a></li>
+                    <li><a class="link-list__btn" href="https://grok.com/" target="_blank">Grok</a></li>
+                    <li><a class="link-list__btn" href="https://claude.ai/new" target="_blank">Claude</a></li>
+                </ul>
+                <p class="card__memo-label">Memo</p>
+                <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__num">02</span>
+                <h2 class="card__title">개발</h2>
+                <span class="card__tag">Dev</span>
+            </div>
+            <div class="card__body">
+                <ul class="link-list">
+                    <li><a class="link-list__btn" href="https://www.youtube.com/" target="_blank">YouTube</a></li>
+                    <li><a class="link-list__btn" href="https://github.com" target="_blank">GitHub</a></li>
+                    <li><a class="link-list__btn" href="https://www.google.com/" target="_blank">Google</a></li>
+                    <li><a class="link-list__btn" href="https://poki.com/kr" target="_blank">Poki</a></li>
+                    <li><a class="link-list__btn" href="https://tt.hancomtaja.com/ko" target="_blank">타자연습</a></li>
+                </ul>
+                <p class="card__memo-label">Memo</p>
+                <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__num">03</span>
+                <h2 class="card__title">품질 관리</h2>
+                <span class="card__tag">QA</span>
+            </div>
+            <div class="card__body">
+                <ul class="link-list">
+                    <li><a class="link-list__btn" href="http://localhost:5500/" target="_blank">localhost:5500</a></li>
+                    <li><a class="link-list__btn" href="http://localhost:8080/" target="_blank">localhost:8080</a></li>
+                    <li><a class="link-list__btn" href="http://localhost:8080/h2-console/" target="_blank">localhost:8080 / h2-console</a></li>
+                </ul>
+                <p class="card__memo-label">Memo</p>
+                <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__num">04</span>
+                <h2 class="card__title">운영</h2>
+                <span class="card__tag">Ops</span>
+            </div>
+            <div class="card__body">
+                <ul class="link-list">
+                    <li><a class="link-list__btn" href="https://grafana.com/" target="_blank">Grafana</a></li>
+                    <li><a class="link-list__btn" href="https://aws.amazon.com/" target="_blank">AWS Console</a></li>
+                    <li><a class="link-list__btn" href="https://www.datadoghq.com/" target="_blank">Datadog</a></li>
+                </ul>
+                <p class="card__memo-label">Memo</p>
+                <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ── PAGE NAV ── -->
+    <p class="page-nav__indicator page-nav__indicator--hidden" id="js-indicator"></p>
+
+    <nav class="page-nav" aria-label="카드 네비게이션">
+        <button class="page-nav__btn" id="js-prev" disabled aria-label="이전 카드">← PREV</button>
+        <button class="page-nav__btn page-nav__btn--toggle" id="js-toggle">SINGLE</button>
+        <button class="page-nav__btn" id="js-next" disabled aria-label="다음 카드">NEXT →</button>
+    </nav>
+
+    <script>
+        'use strict';
+
+        /* 헤더 날짜 */
+        (function initDate() {
+            const el = document.getElementById('js-header-date');
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+            el.textContent = `${days[now.getDay()]}  ${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())}`;
+        }());
+
+        /* 카드 네비게이션 */
+        (function initCardNav() {
+            const STORAGE_PREFIX = 'devpaper-memo-';
+            const CSS_EXPANDED   = 'card-grid--expanded';
+            const CSS_HIDDEN     = 'page-nav__indicator--hidden';
+
+            const grid      = document.getElementById('js-card-grid');
+            const prevBtn   = document.getElementById('js-prev');
+            const nextBtn   = document.getElementById('js-next');
+            const toggleBtn = document.getElementById('js-toggle');
+            const indicator = document.getElementById('js-indicator');
+            const cards     = Array.from(grid.querySelectorAll('.card'));
+            const total     = cards.length;
+
+            let currentIndex = 0;
+            let isExpanded   = true;
+
+            function render() {
+                if (isExpanded) {
+                    grid.classList.add(CSS_EXPANDED);
+                    cards.forEach(c => { c.style.display = ''; });
+                    prevBtn.disabled = true;
+                    nextBtn.disabled = true;
+                    toggleBtn.textContent = 'SINGLE';
+                    indicator.classList.add(CSS_HIDDEN);
+                    return;
+                }
+
+                grid.classList.remove(CSS_EXPANDED);
+                cards.forEach((c, i) => {
+                    const active = i === currentIndex;
+                    c.style.display = active ? '' : 'none';
+                    if (active) {
+                        c.style.animation = 'none';
+                        void c.offsetHeight;
+                        c.style.animation = '';
+                    }
+                });
+
+                prevBtn.disabled = currentIndex === 0;
+                nextBtn.disabled = currentIndex === total - 1;
+                toggleBtn.textContent = 'ALL';
+                indicator.textContent = `${currentIndex + 1} / ${total}`;
+                indicator.classList.remove(CSS_HIDDEN);
+            }
+
+            prevBtn.addEventListener('click', () => { if (currentIndex > 0) { currentIndex--; render(); } });
+            nextBtn.addEventListener('click', () => { if (currentIndex < total - 1) { currentIndex++; render(); } });
+            toggleBtn.addEventListener('click', () => { isExpanded = !isExpanded; render(); });
+
+            /* 메모 LocalStorage */
+            grid.querySelectorAll('.card__memo-input').forEach((el, i) => {
+                const key = `${STORAGE_PREFIX}${i}`;
+                el.value = localStorage.getItem(key) ?? '';
+                el.addEventListener('input', () => localStorage.setItem(key, el.value));
+            });
+
+            render();
+        }());
+    </script>
+</body>
+</html>
