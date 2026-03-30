@@ -4,341 +4,443 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <title>E-Ink 개발 페이퍼 (Mini)</title>
+    <title>E-Ink 개발 페이퍼</title>
     <style>
-        /* ── 디자인 토큰: 색상 및 폰트 정의 ─────────────────────────── */
+        /* ── 디자인 토큰 ──────────────────────────────────────
+           E-Ink 팔레트: 순흑·순백 대신 따뜻한 오프톤 사용
+           --ink       : 텍스트·테두리 전용 (가장 진한 잉크색)
+           --ink-mid   : 부제목·날짜 등 중간 강도 텍스트
+           --ink-faint : 넘버·태그 등 흐린 보조 텍스트
+           --paper     : 페이지 배경 (오프화이트 — 실제 종이 느낌)
+           --paper-dark: 카드 헤더 배경 (paper보다 약간 어두움)
+           --rule      : 격자선·구분선 (연한 회색)
+           --rule-heavy: 버튼 테두리·강조 선 (중간 회색)          */
         :root {
-            --ink:        #121212; 
-            --ink-mid:    #4a4a4a; 
-            --ink-faint:  #8a8a8a; 
-            --paper:      #f9f7f2; 
-            --paper-dark: #eeebe3; 
-            --rule:       #d1cdc4; 
-            --rule-heavy: #7a7570; 
-            --accent:     #000000; 
-            --mono: 'Consolas', 'Courier New', monospace;
-            --sans: 'Segoe UI', 'Malgun Gothic', '맑은 고딕', sans-serif;
+            --ink:        #0a0a0a;
+            --ink-mid:    #3a3a3a;
+            --ink-faint:  #888;
+            --paper:      #f5f2ec;
+            --paper-dark: #e8e4dc;
+            --rule:       #c0bbb2;
+            --rule-heavy: #6a6560;
+            /* Windows: Consolas / Linux: D2Coding / fallback: Courier New */
+            --mono: 'Consolas', 'D2Coding', 'Courier New', monospace;
+            /* Windows: 맑은 고딕 / macOS: Apple SD Gothic Neo */
+            --sans: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
             color-scheme: light;
         }
 
+        /* ── 다크 팔레트 ──────────────────────────────────────
+           :root.dark 클래스를 JS로 토글하여 전환
+           순검정 대신 따뜻한 어두운 톤으로 E-Ink 느낌 유지
+           라이트↔다크: ink/paper 값이 서로 반전되는 구조        */
         :root.dark {
-            --ink:        #e4e1d9; 
+            --ink:        #e8e4dc;  /* 라이트의 paper색 → 다크의 텍스트색 */
             --ink-mid:    #b0aba3;
-            --ink-faint:  #6a6560;
-            --paper:      #181614; 
-            --paper-dark: #221f1c;
-            --rule:       #2e2a27;
-            --rule-heavy: #5a5550;
+            --ink-faint:  #5a5550;
+            --paper:      #141210;  /* 따뜻한 검정 배경 */
+            --paper-dark: #1e1b18;  /* 카드 헤더 — paper보다 약간 밝음 */
+            --rule:       #2a2724;  /* 격자선: 배경과 가까운 색 */
+            --rule-heavy: #4a4540;
             color-scheme: dark;
         }
 
-        /* ── 기본 리셋 및 전역 스타일 ──────────────────────────── */
+        /* ── 전역 리셋 ────────────────────────────────────────
+           모든 요소의 box-sizing을 border-box로 통일
+           브라우저 기본 margin/padding 제거                    */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* ── 다크모드 전환 애니메이션 ────────────────────────
+           테마 전환 시 색상이 0.25s 동안 부드럽게 바뀜
+           body 전체가 아닌 색상이 바뀌는 요소만 지정
+           (불필요한 repaint 최소화)                            */
+        body, .card, .card__header, .page-nav, .link-list__btn, .card__memo-input {
+            transition: background-color 0.25s, color 0.25s, border-color 0.25s;
+        }
+
+        /* ── 바디 ─────────────────────────────────────────────
+           background-image 3겹 구성:
+           ① SVG feTurbulence 노이즈 — 종이 질감 (opacity 0.04)
+           ② 수평 격자선 (24px 간격)
+           ③ 수직 격자선 (24px 간격)
+           하단 padding 120px: 고정 네비바에 카드가 가리지 않도록 */
         body {
             background-color: var(--paper);
-            background-image: 
-                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+            background-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"),
                 linear-gradient(var(--rule) 1px, transparent 1px),
                 linear-gradient(90deg, var(--rule) 1px, transparent 1px);
-            background-size: 200px 200px, 24px 24px, 24px 24px;
+            background-size: 300px 300px, 24px 24px, 24px 24px;
             color: var(--ink);
             font-family: var(--sans);
             line-height: 1.6;
-            padding: 24px 16px 120px;
+            padding: 24px 20px 120px; /* 하단: 네비바 높이 확보 */
             min-height: 100vh;
-            overflow-x: hidden;
-            text-rendering: optimizeLegibility;
-            -webkit-font-smoothing: antialiased;
-            transition: background-color 0.4s ease;
         }
 
-        h1, h2, h3, p, a, span, textarea {
-            text-shadow: 0.1px 0.1px 0.3px rgba(0,0,0,0.05);
-        }
-
-        /* ── E-Ink 리프레시 효과 ─────────────────────────── */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        body.refreshing::after {
-            animation: e-ink-flash 0.3s steps(2) forwards;
-        }
-
-        @keyframes e-ink-flash {
-            0% { opacity: 0; }
-            50% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        /* ── 사이트 헤더 ─────────────────────────────────────────── */
+        /* ── 사이트 헤더 ──────────────────────────────────────
+           신문 마스트헤드 구조: 제목(좌) + 메타정보(우)
+           position: relative — ::before 가상 요소 기준점       */
         .site-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--ink);
+            align-items: baseline;
+            border-bottom: 2px solid var(--ink); /* 헤더 하단 굵은 구분선 */
             padding-bottom: 10px;
             margin-bottom: 24px;
+            position: relative;
         }
 
+        /* 헤더 위쪽에 얇은 선 추가 — 신문 상단 규칙선 모방 */
+        .site-header::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 0; right: 0;
+            height: 1px;
+            background: var(--ink);
+        }
+
+        /* 타이틀: 모노스페이스 + 대문자 + 넓은 자간 — 활자 인쇄 느낌 */
         .site-header__title {
             font-family: var(--mono);
             font-weight: 700;
-            font-size: 16px; /* 헤더 폰트 축소 */
+            font-size: 18px;
             letter-spacing: 4px;
             text-transform: uppercase;
         }
 
+        /* 날짜·볼륨 묶음 — baseline 정렬로 높이 통일 */
         .site-header__meta {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            align-items: baseline;
+            gap: 16px;
         }
 
         .site-header__date {
             font-family: var(--mono);
             font-size: 11px;
-            font-weight: 700;
             color: var(--ink-mid);
+            letter-spacing: 1px;
         }
 
-        /* ── 카드 레이아웃 ─────────────────────────────────── */
+        /* VOL. N — 가장 흐린 색으로 보조 정보 처리 */
+        .site-header__vol {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--ink-faint);
+            letter-spacing: 1px;
+        }
+
+        /* ── 카드 그리드 ──────────────────────────────────────
+           기본(단일 보기): flex column — 카드 세로 쌓기
+           .expanded(전체 보기): CSS Grid — 반응형 열 자동 배치
+           minmax(260px, 1fr): 최소 260px, 공간 있으면 균등 확장 */
         .card-grid {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0; /* -1px 마진 중첩 방식 사용하므로 gap 0 */
         }
 
         .card-grid--expanded {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
+            gap: 12px;
         }
 
+        /* ── 카드 ─────────────────────────────────────────────
+           margin-bottom: -1px — 인접 카드 테두리 중첩으로 2px 방지
+           box-shadow 오프셋: 잉크 스탬프 찍힌 느낌                */
         .card {
             background: var(--paper);
-            border: 1.5px solid var(--ink);
+            border: 1px solid var(--ink);
+            margin-bottom: -1px; /* 테두리 중첩: 단일 1px선처럼 보이게 */
+            padding: 0;
             position: relative;
-            border-radius: 10px;
-            box-shadow: 3px 3px 0 var(--ink);
-            overflow: hidden;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.10); /* 잉크 스탬프 그림자 */
+            transition: box-shadow 0.15s;
         }
 
+        /* 그리드 모드: gap이 간격을 담당하므로 음수 마진 불필요 */
+        .card-grid--expanded .card {
+            margin-bottom: 0;
+        }
+
+        /* 카드 헤더: 3열 grid
+           넘버(32px 고정) / 제목(가변) / 태그(자동)
+           배경을 paper-dark로 분리해 본문과 시각적 구분          */
         .card__header {
             display: grid;
             grid-template-columns: 32px 1fr auto;
             align-items: center;
-            padding: 8px 12px;
+            gap: 8px;
+            border-bottom: 1px solid var(--ink);
+            padding: 10px 14px;
             background: var(--paper-dark);
-            border-bottom: 1.5px solid var(--ink);
         }
 
+        /* 섹션 번호 — 흐린 색으로 보조 역할 강조 억제 */
         .card__num {
             font-family: var(--mono);
-            font-size: 11px;
+            font-size: 10px;
+            font-weight: 700;
             color: var(--ink-faint);
+            letter-spacing: 1px;
         }
 
         .card__title {
+            font-family: var(--sans);
             font-size: 14px;
             font-weight: 700;
+            letter-spacing: 1px;
         }
 
+        /* 태그 배지: 잉크색 배경 + 종이색 텍스트 — 반전 인쇄 효과 */
         .card__tag {
             font-family: var(--mono);
             font-size: 9px;
-            background: var(--ink);
-            color: var(--paper);
-            padding: 1px 8px;
-            border-radius: 20px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--paper);    /* 배경과 반전 */
+            background: var(--ink); /* 잉크 배지 */
+            padding: 2px 6px;
         }
 
+        /* ── 카드 본문 ────────────────────────────────────────
+           링크 목록과 메모 영역을 감싸는 컨테이너              */
         .card__body {
-            padding: 12px;
+            padding: 12px 14px;
         }
 
-        /* ── 링크 리스트 스타일 (초소형 버튼) ─────────────────────────── */
         .link-list {
             list-style: none;
-            margin-bottom: 16px;
+            margin-bottom: 14px; /* 메모 레이블과의 간격 */
         }
 
         .link-list li {
-            margin-bottom: 6px;
+            margin-bottom: 4px; /* 버튼 사이 간격 */
         }
 
+        /* pill 형태 링크 버튼
+           border-radius: 20px — 양끝 완전히 둥근 pill 모양
+           ::before '›' 가상 요소로 방향성 힌트 제공             */
         .link-list__btn {
             display: flex;
             align-items: center;
-            gap: 6px;
-            border: 1.5px solid var(--ink);
-            padding: 4px 12px; /* 버튼 패딩 극소화 */
+            gap: 8px;
+            border: 1px solid var(--rule-heavy);
+            border-radius: 20px; /* pill 형태 */
+            padding: 5px 12px;
             text-decoration: none;
             color: var(--ink);
             font-family: var(--mono);
-            font-size: 11px; /* 폰트 축소 */
-            font-weight: 700;
+            font-size: 11px;
             background: transparent;
-            border-radius: 30px;
-            transition: background 0.15s, color 0.15s;
+            transition: background 0.1s, color 0.1s, border-color 0.1s;
+            position: relative;
+            letter-spacing: 0.3px;
         }
 
+        /* '›' 화살표 — 클릭 가능한 링크임을 시각적으로 암시 */
         .link-list__btn::before {
             content: '›';
-            font-size: 12px;
+            font-size: 14px;
+            line-height: 1;
             color: var(--ink-faint);
+            transition: color 0.1s;
+            flex-shrink: 0; /* 화살표가 줄어들지 않도록 고정 */
         }
 
-        .link-list__btn:hover {
+        /* hover/active: 잉크 반전 — 배경 검정, 텍스트 흰색 */
+        .link-list__btn:hover,
+        .link-list__btn:active {
             background: var(--ink);
+            color: var(--paper);
+            border-color: var(--ink);
+        }
+
+        /* 반전 상태에서 화살표도 paper색으로 동기화 */
+        .link-list__btn:hover::before,
+        .link-list__btn:active::before {
             color: var(--paper);
         }
 
-        /* ── 메모 입력 영역 ─────────────────────────────────────── */
+        /* ── 메모 영역 ────────────────────────────────────────
+           점선 구분선으로 링크 목록과 분리
+           MEMO 레이블: 모노 + 대문자 + 흐린 색으로 보조 표시   */
         .card__memo-label {
             font-family: var(--mono);
             font-size: 9px;
             font-weight: 700;
+            letter-spacing: 2px;
             text-transform: uppercase;
             color: var(--ink-faint);
             margin-bottom: 6px;
-            display: block;
-            border-top: 1px dashed var(--rule);
+            border-top: 1px dashed var(--rule); /* 점선으로 부드럽게 구분 */
             padding-top: 10px;
         }
 
+        /* 메모 입력창
+           border-left: 수직 강조선 (포커스 시 진해짐)
+           repeating-linear-gradient: 줄 노트 배경 (24px 주기)
+           resize: none — 드래그 리사이즈 비활성 (레이아웃 보호) */
         .card__memo-input {
             width: 100%;
-            height: 70px; /* 높이 축소 */
+            height: 76px;
             border: none;
-            border-left: 2px solid var(--rule-heavy);
-            padding: 6px 10px;
+            border-left: 2px solid var(--rule-heavy); /* 좌측 수직 강조선 */
+            padding: 6px 8px;
             font-family: var(--mono);
             font-size: 12px;
             resize: none;
+            /* 줄 노트 효과: 23px 투명 + 1px 선 반복 */
             background: repeating-linear-gradient(
                 transparent,
                 transparent 23px,
                 var(--rule) 23px,
                 var(--rule) 24px
             );
-            line-height: 24px;
+            line-height: 24px; /* 줄 높이를 그라디언트 주기와 일치 */
             color: var(--ink);
             outline: none;
+            transition: border-color 0.15s;
         }
 
-        /* ── 테마 토글 버튼 (초소형 원형) ─────────────────────────────────── */
+        /* 포커스 시 좌측 강조선을 진한 잉크색으로 변경 */
+        .card__memo-input:focus {
+            border-left-color: var(--ink);
+        }
+
+        /* ── 다크모드 토글 버튼 ───────────────────────────────
+           ◐(라이트) / ◑(다크) 유니코드 원 문자로 상태 표현
+           26×26px 정사각형 고정 크기                           */
         .theme-toggle {
-            background: var(--paper);
-            border: 1.5px solid var(--ink);
-            color: var(--ink);
-            font-size: 10px; /* 폰트 축소 */
-            width: 24px; /* 지름 축소 */
-            height: 24px;
+            background: none;
+            border: 1px solid var(--rule-heavy);
+            color: var(--ink-mid);
+            font-size: 13px;
+            width: 26px;
+            height: 26px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            box-shadow: 2px 2px 0 var(--ink);
+            padding: 0;
+            line-height: 1;
+            transition: background 0.1s, color 0.1s;
         }
 
-        .theme-toggle:active {
-            transform: translate(1px, 1px);
-            box-shadow: 1px 1px 0 var(--ink);
+        /* hover: 다른 버튼과 동일한 잉크 반전 스타일 */
+        .theme-toggle:hover {
+            background: var(--ink);
+            color: var(--paper);
+            border-color: var(--ink);
         }
 
-        /* ── 하단 내비게이션 바 (초소형 컴팩트) ────────────────────────── */
+        /* ── 하단 네비게이션 바 ───────────────────────────────
+           position: fixed — 스크롤과 무관하게 항상 화면 하단 고정
+           left 50% + translateX(-50%): 수평 중앙 정렬 관용구
+           box-shadow 오프셋: 잉크 스탬프 느낌 강조              */
         .page-nav {
             position: fixed;
             bottom: 20px;
             left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            max-width: 340px; /* 최대 너비 축소 */
+            transform: translateX(-50%); /* 수평 중앙 정렬 */
+            width: 92%;
+            max-width: 420px;
             display: flex;
             background: var(--paper);
             border: 2px solid var(--ink);
-            border-radius: 30px;
-            box-shadow: 4px 4px 0 var(--ink);
-            z-index: 1000;
-            overflow: hidden;
+            box-shadow: 3px 3px 0 var(--ink); /* 오프셋 그림자 */
+            z-index: 100; /* 카드 위에 표시 */
         }
 
+        /* 네비 버튼 공통: flex:1 로 균등 너비 분할
+           border-right 로 버튼 사이 구분선 표현               */
         .page-nav__btn {
             flex: 1;
-            padding: 8px; /* 패딩 축소 */
+            padding: 10px;
             border: none;
             background: none;
             font-family: var(--mono);
-            font-size: 11px; /* 폰트 축소 */
+            font-size: 11px;
             font-weight: 700;
+            letter-spacing: 1px;
             cursor: pointer;
+            border-right: 1px solid var(--rule-heavy); /* 버튼 사이 구분선 */
             color: var(--ink);
-            border-right: 1px solid var(--ink);
+            transition: background 0.1s, color 0.1s;
         }
 
+        /* 마지막 버튼 오른쪽 구분선 제거 */
         .page-nav__btn:last-child { border-right: none; }
 
+        /* disabled 상태는 제외하고 hover 반응 */
         .page-nav__btn:hover:not(:disabled) {
             background: var(--ink);
             color: var(--paper);
         }
 
+        /* 비활성 버튼: 흐린 색 + 기본 커서 */
         .page-nav__btn:disabled {
             color: var(--rule);
-            opacity: 0.5;
+            cursor: default;
         }
 
-        /* 페이지 번호 인디케이터 (초소형) */
+        /* 토글 버튼 — 자간 약간 넓혀 SINGLE/ALL 가독성 향상 */
+        .page-nav__btn--toggle {
+            border-right: 1px solid var(--rule-heavy);
+            letter-spacing: 1.5px;
+        }
+
+        /* 현재 카드 위치 표시 (예: 2 / 4)
+           잉크 반전 배지 — 네비바 바로 위에 고정              */
         .page-nav__indicator {
             position: fixed;
-            bottom: 80px; /* 위치 상향 조정 */
+            bottom: 80px; /* 네비바 높이 + 여백 */
             left: 50%;
             transform: translateX(-50%);
             background: var(--ink);
             color: var(--paper);
             padding: 3px 12px;
-            border-radius: 20px;
             font-family: var(--mono);
-            font-size: 9px; /* 폰트 축소 */
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            z-index: 1000;
+            font-size: 10px;
+            letter-spacing: 2px;
+            z-index: 100;
         }
 
+        /* JS가 클래스 토글로 제어하는 숨김 상태 */
         .page-nav__indicator--hidden { display: none; }
 
-        /* ── 고스트 효과 애니메이션 ─────────────────────────── */
-        @keyframes ink-ghost {
-            0% { opacity: 0.3; filter: grayscale(1) blur(1px); }
-            100% { opacity: 1; filter: grayscale(0) blur(0); }
+        /* ── 카드 진입 애니메이션 ─────────────────────────────
+           E-Ink 화면 갱신 특성을 CSS로 모방:
+           opacity 0→1 + blur 1px→0 — 잉크가 번지며 나타나는 효과
+           animation-fill-mode: both — 애니메이션 전후 상태 유지  */
+        @keyframes ink-in {
+            from { opacity: 0; filter: blur(1px); }
+            to   { opacity: 1; filter: blur(0); }
         }
 
-        .card.is-active {
-            animation: ink-ghost 0.35s ease-out;
-        }
+        .card { animation: ink-in 0.25s ease both; }
     </style>
 </head>
 
 <body>
 
+    <!-- ── HEADER ── -->
     <header class="site-header">
         <span class="site-header__title">Dev Paper</span>
         <div class="site-header__meta">
+            <span class="site-header__vol">VOL. 1</span>
             <span class="site-header__date" id="js-header-date"></span>
-            <button class="theme-toggle" id="js-theme-toggle" aria-label="테마 전환">◐</button>
+            <button class="theme-toggle" id="js-theme-toggle" aria-label="다크모드 전환">◐</button>
         </div>
     </header>
 
+    <!-- ── CARD GRID ── -->
     <main class="card-grid" id="js-card-grid">
+
         <section class="card">
             <div class="card__header">
                 <span class="card__num">01</span>
@@ -349,9 +451,10 @@
                 <ul class="link-list">
                     <li><a class="link-list__btn" href="https://chatgpt.com/" target="_blank">ChatGPT</a></li>
                     <li><a class="link-list__btn" href="https://gemini.google.com/" target="_blank">Gemini</a></li>
+                    <li><a class="link-list__btn" href="https://grok.com/" target="_blank">Grok</a></li>
                     <li><a class="link-list__btn" href="https://claude.ai/new" target="_blank">Claude</a></li>
                 </ul>
-                <span class="card__memo-label">Ink Memo</span>
+                <p class="card__memo-label">Memo</p>
                 <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
             </div>
         </section>
@@ -359,16 +462,18 @@
         <section class="card">
             <div class="card__header">
                 <span class="card__num">02</span>
-                <h2 class="card__title">개발 도구</h2>
+                <h2 class="card__title">개발</h2>
                 <span class="card__tag">Dev</span>
             </div>
             <div class="card__body">
                 <ul class="link-list">
+                    <li><a class="link-list__btn" href="https://www.youtube.com/" target="_blank">YouTube</a></li>
                     <li><a class="link-list__btn" href="https://github.com" target="_blank">GitHub</a></li>
-                    <li><a class="link-list__btn" href="https://stackoverflow.com/" target="_blank">StackOverflow</a></li>
-                    <li><a class="link-list__btn" href="https://www.google.com/" target="_blank">Google Search</a></li>
+                    <li><a class="link-list__btn" href="https://www.google.com/" target="_blank">Google</a></li>
+                    <li><a class="link-list__btn" href="https://poki.com/kr" target="_blank">Poki</a></li>
+                    <li><a class="link-list__btn" href="https://tt.hancomtaja.com/ko" target="_blank">타자연습</a></li>
                 </ul>
-                <span class="card__memo-label">Ink Memo</span>
+                <p class="card__memo-label">Memo</p>
                 <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
             </div>
         </section>
@@ -376,15 +481,16 @@
         <section class="card">
             <div class="card__header">
                 <span class="card__num">03</span>
-                <h2 class="card__title">로컬 테스트</h2>
+                <h2 class="card__title">품질 관리</h2>
                 <span class="card__tag">QA</span>
             </div>
             <div class="card__body">
                 <ul class="link-list">
-                    <li><a class="link-list__btn" href="http://localhost:5500/" target="_blank">Local:5500</a></li>
-                    <li><a class="link-list__btn" href="http://localhost:8080/" target="_blank">Local:8080</a></li>
+                    <li><a class="link-list__btn" href="http://localhost:5500/" target="_blank">localhost:5500</a></li>
+                    <li><a class="link-list__btn" href="http://localhost:8080/" target="_blank">localhost:8080</a></li>
+                    <li><a class="link-list__btn" href="http://localhost:8080/h2-console/" target="_blank">localhost:8080 / h2-console</a></li>
                 </ul>
-                <span class="card__memo-label">Ink Memo</span>
+                <p class="card__memo-label">Memo</p>
                 <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
             </div>
         </section>
@@ -392,111 +498,136 @@
         <section class="card">
             <div class="card__header">
                 <span class="card__num">04</span>
-                <h2 class="card__title">운영/모니터링</h2>
+                <h2 class="card__title">운영</h2>
                 <span class="card__tag">Ops</span>
             </div>
             <div class="card__body">
                 <ul class="link-list">
-                    <li><a class="link-list__btn" href="https://aws.amazon.com/" target="_blank">AWS Management</a></li>
-                    <li><a class="link-list__btn" href="https://grafana.com/" target="_blank">Grafana Cloud</a></li>
+                    <li><a class="link-list__btn" href="https://grafana.com/" target="_blank">Grafana</a></li>
+                    <li><a class="link-list__btn" href="https://aws.amazon.com/" target="_blank">AWS Console</a></li>
+                    <li><a class="link-list__btn" href="https://www.datadoghq.com/" target="_blank">Datadog</a></li>
                 </ul>
-                <span class="card__memo-label">Ink Memo</span>
+                <p class="card__memo-label">Memo</p>
                 <textarea class="card__memo-input" placeholder="메모를 작성하세요..."></textarea>
             </div>
         </section>
+
     </main>
 
+    <!-- ── PAGE NAV ── -->
     <p class="page-nav__indicator page-nav__indicator--hidden" id="js-indicator"></p>
 
     <nav class="page-nav" aria-label="카드 네비게이션">
-        <button class="page-nav__btn" id="js-prev" disabled>← PREV</button>
-        <button class="page-nav__btn" id="js-toggle">SINGLE</button>
-        <button class="page-nav__btn" id="js-next" disabled>NEXT →</button>
+        <button class="page-nav__btn" id="js-prev" disabled aria-label="이전 카드">← PREV</button>
+        <button class="page-nav__btn page-nav__btn--toggle" id="js-toggle">SINGLE</button>
+        <button class="page-nav__btn" id="js-next" disabled aria-label="다음 카드">NEXT →</button>
     </nav>
 
     <script>
         'use strict';
 
-        function triggerRefresh(callback) {
-            document.body.classList.add('refreshing');
-            setTimeout(() => {
-                if (callback) callback();
-                setTimeout(() => {
-                    document.body.classList.remove('refreshing');
-                }, 150);
-            }, 180);
-        }
-
+        /* ── 헤더 날짜 표시 ──────────────────────────────────
+           요일(영문 약자) + 연.월.일 형식으로 렌더링           */
         (function initDate() {
-            const el = document.getElementById('js-header-date');
-            const now = new Date();
+            const el   = document.getElementById('js-header-date');
+            const now  = new Date();
+            const pad  = (n) => String(n).padStart(2, '0');       // 한 자리 숫자 앞에 0 추가
             const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-            const pad = (n) => String(n).padStart(2, '0');
-            el.textContent = `${days[now.getDay()]} ${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())}`;
+            el.textContent =
+                `${days[now.getDay()]}  ${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())}`;
         }());
 
+        /* ── 다크모드 초기화 ─────────────────────────────────
+           우선순위: ① localStorage 저장값 → ② OS 설정       */
         (function initTheme() {
-            const btn = document.getElementById('js-theme-toggle');
-            const root = document.documentElement;
-            const DARK_KEY = 'devpaper-dark-v2';
-            let isDark = localStorage.getItem(DARK_KEY) === '1';
+            const btn     = document.getElementById('js-theme-toggle');
+            const root    = document.documentElement;
+            const DARK_KEY = 'devpaper-dark';                      // 저장 키
+
+            const saved      = localStorage.getItem(DARK_KEY);
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            let isDark = saved !== null ? saved === '1' : prefersDark; // 저장값 없으면 OS 따름
+
+            /* :root 클래스 및 아이콘 동기화 */
             function apply() {
                 root.classList.toggle('dark', isDark);
-                btn.textContent = isDark ? '◑' : '◐';
+                btn.textContent = isDark ? '◑' : '◐';             // 다크: 왼쪽 채움, 라이트: 오른쪽 채움
             }
+
+            /* 버튼 클릭 시 토글 후 저장 */
             btn.addEventListener('click', () => {
-                triggerRefresh(() => {
-                    isDark = !isDark;
-                    localStorage.setItem(DARK_KEY, isDark ? '1' : '0');
-                    apply();
-                });
+                isDark = !isDark;
+                localStorage.setItem(DARK_KEY, isDark ? '1' : '0');
+                apply();
             });
-            apply();
+
+            apply(); // 최초 적용
         }());
 
+        /* ── 카드 네비게이션 ─────────────────────────────────
+           전체 보기(그리드) ↔ 단일 보기(한 장씩) 전환        */
         (function initCardNav() {
-            const grid = document.getElementById('js-card-grid');
-            const cards = Array.from(grid.querySelectorAll('.card'));
-            const prevBtn = document.getElementById('js-prev');
-            const nextBtn = document.getElementById('js-next');
+            const STORAGE_PREFIX = 'devpaper-memo-';               // 메모 저장 키 접두사
+            const CSS_EXPANDED   = 'card-grid--expanded';          // 그리드 레이아웃 클래스
+            const CSS_HIDDEN     = 'page-nav__indicator--hidden';  // 인디케이터 숨김 클래스
+
+            const grid      = document.getElementById('js-card-grid');
+            const prevBtn   = document.getElementById('js-prev');
+            const nextBtn   = document.getElementById('js-next');
             const toggleBtn = document.getElementById('js-toggle');
             const indicator = document.getElementById('js-indicator');
-            let currentIndex = 0;
-            let isExpanded = true;
+            const cards     = Array.from(grid.querySelectorAll('.card'));
+            const total     = cards.length;                        // 카드 총 개수
 
-            function updateUI() {
+            let currentIndex = 0;     // 현재 표시 중인 카드 인덱스
+            let isExpanded   = true;  // true: 전체 보기 / false: 단일 보기
+
+            /* 현재 상태에 맞게 DOM 갱신 */
+            function render() {
                 if (isExpanded) {
-                    grid.classList.add('card-grid--expanded');
-                    cards.forEach(c => { c.style.display = ''; c.classList.remove('is-active'); });
-                    prevBtn.disabled = nextBtn.disabled = true;
+                    /* 전체 보기: 모든 카드 표시, 이전/다음 버튼 비활성 */
+                    grid.classList.add(CSS_EXPANDED);
+                    cards.forEach(c => { c.style.display = ''; });
+                    prevBtn.disabled = true;
+                    nextBtn.disabled = true;
                     toggleBtn.textContent = 'SINGLE';
-                    indicator.classList.add('page-nav__indicator--hidden');
-                } else {
-                    grid.classList.remove('card-grid--expanded');
-                    cards.forEach((c, i) => {
-                        const active = i === currentIndex;
-                        c.style.display = active ? '' : 'none';
-                        c.classList.toggle('is-active', active);
-                    });
-                    prevBtn.disabled = currentIndex === 0;
-                    nextBtn.disabled = currentIndex === cards.length - 1;
-                    toggleBtn.textContent = 'ALL';
-                    indicator.textContent = `${currentIndex + 1} / ${cards.length}`;
-                    indicator.classList.remove('page-nav__indicator--hidden');
+                    indicator.classList.add(CSS_HIDDEN);
+                    return;
                 }
+
+                /* 단일 보기: 현재 인덱스 카드만 표시 */
+                grid.classList.remove(CSS_EXPANDED);
+                cards.forEach((c, i) => {
+                    const active = i === currentIndex;
+                    c.style.display = active ? '' : 'none';
+                    if (active) {
+                        /* 애니메이션 재실행: none 지정 → reflow → 초기화 */
+                        c.style.animation = 'none';
+                        void c.offsetHeight; // 강제 reflow
+                        c.style.animation = '';
+                    }
+                });
+
+                prevBtn.disabled = currentIndex === 0;             // 첫 카드면 이전 비활성
+                nextBtn.disabled = currentIndex === total - 1;     // 마지막 카드면 다음 비활성
+                toggleBtn.textContent = 'ALL';
+                indicator.textContent = `${currentIndex + 1} / ${total}`; // N / 전체 표시
+                indicator.classList.remove(CSS_HIDDEN);
             }
 
-            prevBtn.addEventListener('click', () => { if (currentIndex > 0) triggerRefresh(() => { currentIndex--; updateUI(); }); });
-            nextBtn.addEventListener('click', () => { if (currentIndex < cards.length - 1) triggerRefresh(() => { currentIndex++; updateUI(); }); });
-            toggleBtn.addEventListener('click', () => { triggerRefresh(() => { isExpanded = !isExpanded; updateUI(); }); });
+            /* 이전 / 다음 / 전환 버튼 이벤트 */
+            prevBtn.addEventListener('click',   () => { if (currentIndex > 0)           { currentIndex--; render(); } });
+            nextBtn.addEventListener('click',   () => { if (currentIndex < total - 1)   { currentIndex++; render(); } });
+            toggleBtn.addEventListener('click', () => { isExpanded = !isExpanded; render(); });
 
-            cards.forEach((card, i) => {
-                const input = card.querySelector('.card__memo-input');
-                const key = `devpaper-memo-v2-${i}`;
-                input.value = localStorage.getItem(key) || '';
-                input.addEventListener('input', () => localStorage.setItem(key, input.value));
+            /* 메모 LocalStorage 동기화: 로드 시 복원, 입력 시 즉시 저장 */
+            grid.querySelectorAll('.card__memo-input').forEach((el, i) => {
+                const key = `${STORAGE_PREFIX}${i}`;
+                el.value = localStorage.getItem(key) ?? '';        // 저장된 값 복원
+                el.addEventListener('input', () => localStorage.setItem(key, el.value));
             });
-            updateUI();
+
+            render(); // 초기 렌더링
         }());
     </script>
 </body>
