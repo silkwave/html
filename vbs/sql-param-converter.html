@@ -1,88 +1,199 @@
 <!doctype html>
 <html lang="ko">
+
 <head>
-<meta charset="utf-8"/>
-<title>SQL 파라미터 상호 변환기</title>
-<style>
-  body { font-family: "Segoe UI", sans-serif; margin: 20px; background:#f9f9f9; color:#222; }
-  h2 { color:#333; }
-  textarea {
-    width: 100%; height: 120px; margin: 8px 0;
-    padding: 8px; font-family: monospace;
-    border: 1px solid #ccc; border-radius: 4px;
-    background: #fff;
-  }
-  button {
-    padding: 8px 14px; margin-right: 8px;
-    cursor: pointer; border: none; border-radius: 4px;
-    background: #0078d7; color: white;
-  }
-  button:hover { background: #005fa3; }
-  #copyBtn { background: #4caf50; }
-  #copyBtn:hover { background: #3e8e41; }
-  #status { font-size: 0.9em; color:#555; margin-top:6px; }
-</style>
+  <meta charset="utf-8" />
+  <title>SQL 파라미터 상호 변환기</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+      color: #222;
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      margin: 8px 0;
+      padding: 8px;
+      font-family: monospace;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    #outputText {
+      background: #f4f4f4;
+    }
+
+    button {
+      padding: 8px 14px;
+      margin-right: 8px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background: #0078d7;
+      color: white;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    #copyBtn {
+      background: #4caf50;
+    }
+
+    #copyBtn:hover {
+      background: #3e8e41;
+    }
+
+    #clearBtn {
+      background: #888;
+    }
+
+    #clearBtn:hover {
+      background: #666;
+    }
+
+    #status {
+      font-size: 0.9em;
+      color: #555;
+      margin-top: 8px;
+      min-height: 1.4em;
+    }
+
+    /* 파라미터 순서 목록 */
+    #paramList {
+      display: none;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #fffbe6;
+      border: 1px solid #e0d080;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.88em;
+      color: #555;
+    }
+
+    #paramList b {
+      color: #333;
+    }
+  </style>
 </head>
+
 <body>
-  <h2>SQL 파라미터 상호 변환기 (:param ↔ #{param})</h2>
+
+  <h2>SQL 파라미터 상호 변환기</h2>
+  <p style="font-size:.85em;color:#666;margin:-4px 0 12px">
+    <code>#{param}</code> · <code>:param</code> · <code>?</code> — 자동 방향 감지
+  </p>
 
   <label>입력 텍스트</label>
   <textarea id="inputText">SELECT * FROM users WHERE id = :userId AND name = #{userName};</textarea>
 
   <div>
-    <button onclick="convert()">변환 (자동 방향 감지)</button>
+    <button onclick="convert()">변환 (자동 감지)</button>
     <button onclick="copyOutput()" id="copyBtn">복사</button>
-    <button onclick="clearText()">초기화</button>
+    <button onclick="clearText()" id="clearBtn">초기화</button>
   </div>
 
   <label>출력 결과</label>
   <textarea id="outputText" readonly></textarea>
 
   <div id="status"></div>
+  <div id="paramList"></div>
 
-<script>
-function convert() {
-  const input = document.getElementById('inputText').value.trim();
-  let output = "";
-  let direction = "";
+  <script>
+    function detect(input) {
+      const hasMybatis = /\#\{[A-Za-z0-9_]+/.test(input);
+      const hasSpring = /:([A-Za-z][A-Za-z0-9_]*)/.test(input);
+      const hasJdbc = /\?/.test(input);
 
-  if (input.includes(':') && !input.includes('#{')) {
-    // :param → #{param}
-    output = input.replace(/:([A-Za-z0-9_]+)/g, '#{$1}');
-    direction = ":param → #{param}";
-  } else if (input.includes('#{')) {
-    // #{param} → :param
-    output = input.replace(/\#\{([A-Za-z0-9_]+)\}/g, ':$1');
-    direction = "#{param} → :param";
-  } else {
-    output = input;
-    direction = "변환할 패턴이 없습니다.";
-  }
+      if (hasMybatis && !hasSpring) return 'mybatis';   // #{} 만 있음
+      if (hasSpring && !hasMybatis) return 'spring';   // :param 만 있음
+      if (hasJdbc && !hasMybatis && !hasSpring) return 'jdbc'; // ? 만 있음
+      if (hasMybatis && hasSpring) return 'mixed';      // 두 스타일 혼합
+      return 'none';
+    }
 
-  document.getElementById('outputText').value = output;
-  document.getElementById('status').textContent = "✅ 변환 방향: " + direction;
-}
+    function convert() {
+      const input = document.getElementById('inputText').value;
+      const style = detect(input);
+      let output = '', direction = '', params = [];
 
-function copyOutput() {
-  const text = document.getElementById('outputText').value;
-  if (!text) {
-    alert("복사할 내용이 없습니다.");
-    return;
-  }
-  navigator.clipboard.writeText(text)
-    .then(() => {
-      document.getElementById('status').textContent = "📋 복사 완료!";
-    })
-    .catch(() => {
-      alert("복사 실패! 브라우저 권한을 확인하세요.");
+      if (style === 'mybatis') {
+        // #{param} → :param
+        output = input.replace(/\#\{([A-Za-z0-9_]+)(?:[^}]*)?\}/g, (_, n) => { params.push(n); return ':' + n; });
+        direction = '#{param} → :param (MyBatis → Spring JDBC)';
+
+      } else if (style === 'spring') {
+        // :param → #{param}
+        output = input.replace(/:([A-Za-z][A-Za-z0-9_]*)/g, (_, n) => { params.push(n); return '#{' + n + '}'; });
+        direction = ':param → #{param} (Spring JDBC → MyBatis)';
+
+      } else if (style === 'jdbc') {
+        // ? → #{param1, param2, …}
+        let i = 0;
+        output = input.replace(/\?/g, () => { const n = 'param' + (++i); params.push(n); return '#{' + n + '}'; });
+        direction = '? → #{param} (JDBC → MyBatis, 이름은 param1… 자동 부여)';
+
+      } else if (style === 'mixed') {
+        // 혼합: #{} → :param 로 통일 (Spring 우선)
+        output = input.replace(/\#\{([A-Za-z0-9_]+)(?:[^}]*)?\}/g, (_, n) => { params.push(n); return ':' + n; });
+        direction = '혼합 입력 → :param 으로 통일 (#{} 부분만 변환)';
+
+      } else {
+        // 파라미터 없음 → ? 로 변환할 것이 없으므로 :param 변환 시도 후 안내
+        output = input;
+        direction = '변환할 파라미터 패턴이 없습니다 (#{} / :param / ? 없음)';
+      }
+
+      document.getElementById('outputText').value = output;
+      document.getElementById('status').textContent = '✅ 변환 방향: ' + direction;
+
+      // ? 변환 시 파라미터 순서 표시
+      const listEl = document.getElementById('paramList');
+      if (params.length && style === 'jdbc') {
+        listEl.style.display = 'block';
+        listEl.innerHTML = '<b>파라미터 순서</b>: ' + params.map((p, i) => `[${i + 1}] ${p}`).join(' · ');
+      } else if (params.length) {
+        listEl.style.display = 'block';
+        listEl.innerHTML = '<b>변환된 파라미터</b>: ' + params.join(' · ');
+      } else {
+        listEl.style.display = 'none';
+      }
+    }
+
+    function copyOutput() {
+      const text = document.getElementById('outputText').value;
+      if (!text) { document.getElementById('status').textContent = '⚠ 복사할 내용이 없습니다.'; return; }
+      navigator.clipboard.writeText(text)
+        .then(() => { document.getElementById('status').textContent = '📋 복사 완료!'; })
+        .catch(() => {
+          document.getElementById('outputText').select();
+          document.execCommand('copy');
+          document.getElementById('status').textContent = '📋 복사됨 (fallback)';
+        });
+    }
+
+    function clearText() {
+      document.getElementById('inputText').value = '';
+      document.getElementById('outputText').value = '';
+      document.getElementById('status').textContent = '';
+      document.getElementById('paramList').style.display = 'none';
+    }
+
+    // Ctrl+Enter 단축키
+    document.getElementById('inputText').addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') convert();
     });
-}
-
-function clearText() {
-  document.getElementById('inputText').value = '';
-  document.getElementById('outputText').value = '';
-  document.getElementById('status').textContent = '';
-}
-</script>
+  </script>
 </body>
+
 </html>

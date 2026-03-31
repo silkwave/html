@@ -1,41 +1,992 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전문 분석기</title>
-    <link rel="stylesheet" href="styles.css"> <!-- CSS 파일 연결 -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>전문 분석기</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4efe6;
+      --bg-accent: radial-gradient(circle at top left, rgba(184, 141, 67, 0.16), transparent 28%), linear-gradient(180deg, #f6f1e8 0%, #ebe2d5 100%);
+      --surface: rgba(255, 252, 247, 0.92);
+      --surface-strong: #fffdf9;
+      --surface-muted: #f2ebdf;
+      --border: #d4c7b3;
+      --border-strong: #b79b72;
+      --text: #231b13;
+      --text-muted: #65584a;
+      --text-faint: #8b7d6d;
+      --accent: #8b4b17;
+      --accent-strong: #6d360d;
+      --accent-soft: rgba(139, 75, 23, 0.12);
+      --ok: #1f6a3f;
+      --ok-bg: #edf6ef;
+      --error: #a33a20;
+      --error-bg: #fbeae5;
+      --shadow: 0 22px 48px rgba(48, 30, 14, 0.12);
+      --radius-lg: 22px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --font-sans: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      --font-mono: "JetBrains Mono", "D2Coding", "Consolas", "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-accent);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    button, input, textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app-shell {
+      width: min(1200px, calc(100vw - 32px));
+      margin: 24px auto 48px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: start;
+      margin-bottom: 20px;
+    }
+
+    .hero-card,
+    .panel,
+    .status-bar,
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--text-muted);
+      max-width: 58ch;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel,
+    .table-card {
+      padding: 20px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .section-head span {
+      color: var(--text-faint);
+      font-size: 0.82rem;
+    }
+
+    .field-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .field textarea,
+    .field input,
+    .table-card input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface-strong);
+      color: var(--text);
+    }
+
+    .field textarea,
+    .field input {
+      padding: 12px 14px;
+    }
+
+    .field textarea {
+      min-height: 180px;
+      resize: vertical;
+      font-family: var(--font-mono);
+      font-size: 0.92rem;
+    }
+
+    .field textarea[readonly] {
+      background: var(--surface-muted);
+    }
+
+    .field textarea:focus,
+    .field input:focus,
+    .table-card input:focus {
+      outline: none;
+      border-color: var(--border-strong);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      background: var(--surface-muted);
+    }
+
+    .metric b {
+      display: block;
+      font-size: 1.1rem;
+      letter-spacing: -0.03em;
+    }
+
+    .metric span {
+      color: var(--text-faint);
+      font-size: 0.8rem;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-strong);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .button:hover {
+      background: var(--surface-muted);
+    }
+
+    .button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff7ef;
+    }
+
+    .button.primary:hover {
+      background: var(--accent-strong);
+    }
+
+    .button.ghost {
+      background: transparent;
+    }
+
+    .button.danger {
+      color: var(--error);
+    }
+
+    .status-bar {
+      margin: 20px 0;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .status-bar[data-state="ok"] {
+      border-color: #b8d7c2;
+      background: var(--ok-bg);
+    }
+
+    .status-bar[data-state="error"] {
+      border-color: #e5b8ad;
+      background: var(--error-bg);
+    }
+
+    .status-message {
+      font-weight: 700;
+    }
+
+    .status-detail {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-align: right;
+    }
+
+    .table-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .table-frame {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: var(--surface-strong);
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 12px 10px;
+      background: var(--surface-muted);
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    tbody td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #f8f2ea;
+    }
+
+    tbody tr[data-invalid="true"] td {
+      background: #fdf1ed;
+    }
+
+    th.col-index,
+    td.col-index,
+    th.col-actions,
+    td.col-actions {
+      width: 76px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    th.col-length,
+    td.col-length {
+      width: 110px;
+    }
+
+    td.col-content {
+      min-width: 280px;
+    }
+
+    td.col-content textarea,
+    .table-card input {
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+    }
+
+    td.col-content textarea {
+      width: 100%;
+      min-height: 74px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-strong);
+      color: var(--text);
+    }
+
+    .icon-button {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 960px) {
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        width: min(100vw - 20px, 100%);
+        margin-top: 10px;
+      }
+
+      .hero-card,
+      .panel,
+      .table-card {
+        padding: 16px;
+        border-radius: 18px;
+      }
+
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .status-bar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1>전문 분석기</h1>
-    
-    <div id="orginalmesg">
-        <span id="messageLabel">원본 전문:</span>
-        <span id="messageContent">가나다1234567890</span>
-    </div>
-    
-    <div id="result">
-        <span id="mergedField">합쳐진 전문:</span>
-        <span id="mergedValue">[]</span>
-    </div>
+  <main class="app-shell">
+    <section class="hero">
+      <div class="hero-card">
+        <span class="eyebrow">Message Field Splitter</span>
+        <h1>전문 분석기</h1>
+        <p>고정 길이 전문을 필드 단위로 분해하고 다시 조립합니다. 실무 사용을 기준으로 검증, 가져오기/내보내기, 다크 테마, 접근성을 정리했습니다.</p>
+      </div>
+      <div class="hero-actions">
+        <button type="button" class="button" data-action="reset">초기화</button>
+      </div>
+    </section>
 
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>영문명</th>
-                <th>한글명</th>
-                <th>길이</th>
-                <th>전문내용</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- 샘플 데이터가 여기에 추가됩니다. -->
-        </tbody>
-    </table>
-    <button onclick="createSampleData()">샘플 데이터 생성</button>
-    <button onclick="splitSeg()">전문 분석기</button>
-    <button onclick="mergeSeg()">전문 합치기</button>
+    <section class="layout" aria-label="전문 데이터 편집">
+      <div class="panel">
+        <div class="section-head">
+          <h2>원본 / 결과 전문</h2>
+          <span id="sourceSummary">0자 입력</span>
+        </div>
 
-    <script src="script.js"></script> <!-- JavaScript 파일 연결 -->
+        <div class="field-stack">
+          <div class="field">
+            <label for="sourceMessage">원본 전문</label>
+            <textarea id="sourceMessage" spellcheck="false" placeholder="분석할 전문을 입력하세요."></textarea>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="mergedMessage">합쳐진 전문</label>
+              <button type="button" class="button ghost" data-action="copy-merged">결과 복사</button>
+            </div>
+            <textarea id="mergedMessage" spellcheck="false" readonly placeholder="필드를 합치면 결과가 표시됩니다."></textarea>
+          </div>
+        </div>
+
+        <div class="metrics" aria-live="polite">
+          <div class="metric">
+            <b id="metricSourceLength">0</b>
+            <span>원본 길이</span>
+          </div>
+          <div class="metric">
+            <b id="metricFieldLength">0</b>
+            <span>필드 길이 합계</span>
+          </div>
+          <div class="metric">
+            <b id="metricRowCount">0</b>
+            <span>필드 수</span>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button type="button" class="button primary" data-action="split">전문 분석</button>
+          <button type="button" class="button" data-action="merge">전문 합치기</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="section-head">
+          <h2>필드 정의</h2>
+          <span>순서, 길이, 값 편집 가능</span>
+        </div>
+
+        <div class="table-tools">
+          <button type="button" class="button" data-action="add-row">행 추가</button>
+          <button type="button" class="button" data-action="export-csv">CSV 내보내기</button>
+          <button type="button" class="button" data-action="export-json">JSON 내보내기</button>
+          <button type="button" class="button" data-action="import">가져오기</button>
+          <input id="fileInput" class="hidden" type="file" accept=".csv,.json">
+        </div>
+
+        <div class="table-frame">
+          <table aria-describedby="tableHelp">
+            <caption id="tableHelp" class="sr-only">전문 필드 정의 테이블</caption>
+            <thead>
+              <tr>
+                <th class="col-index" scope="col">#</th>
+                <th scope="col">영문명</th>
+                <th scope="col">한글명</th>
+                <th class="col-length" scope="col">길이</th>
+                <th scope="col">전문내용</th>
+                <th class="col-actions" scope="col">이동/삭제</th>
+              </tr>
+            </thead>
+            <tbody id="fieldTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-bar" id="statusBar" data-state="ok" aria-live="polite">
+      <div class="status-message" id="statusMessage">필드 정의를 입력한 뒤 전문 분석 또는 합치기를 실행하세요.</div>
+      <div class="status-detail" id="statusDetail">대기 중</div>
+    </section>
+  </main>
+
+  <template id="rowTemplate">
+    <tr>
+      <td class="col-index js-index">1</td>
+      <td><input class="js-name" type="text" placeholder="fieldName" aria-label="영문명"></td>
+      <td><input class="js-label" type="text" placeholder="한글명" aria-label="한글명"></td>
+      <td class="col-length"><input class="js-length" type="number" min="1" step="1" placeholder="1" aria-label="길이"></td>
+      <td class="col-content"><textarea class="js-content" spellcheck="false" placeholder="전문 내용"></textarea></td>
+      <td class="col-actions">
+        <button type="button" class="button icon-button js-move-up" aria-label="위로 이동">↑</button>
+        <button type="button" class="button icon-button js-move-down" aria-label="아래로 이동">↓</button>
+        <button type="button" class="button icon-button danger js-delete" aria-label="행 삭제">×</button>
+      </td>
+    </tr>
+  </template>
+
+  <script>
+    const App = {
+      elements: {},
+
+      init() {
+        this.cacheElements();
+        this.bindEvents();
+        this.reset(false);
+      },
+
+      cacheElements() {
+        this.elements.body = document.body;
+        this.elements.sourceMessage = document.getElementById("sourceMessage");
+        this.elements.mergedMessage = document.getElementById("mergedMessage");
+        this.elements.fieldTableBody = document.getElementById("fieldTableBody");
+        this.elements.rowTemplate = document.getElementById("rowTemplate");
+        this.elements.fileInput = document.getElementById("fileInput");
+        this.elements.statusBar = document.getElementById("statusBar");
+        this.elements.statusMessage = document.getElementById("statusMessage");
+        this.elements.statusDetail = document.getElementById("statusDetail");
+        this.elements.metricSourceLength = document.getElementById("metricSourceLength");
+        this.elements.metricFieldLength = document.getElementById("metricFieldLength");
+        this.elements.metricRowCount = document.getElementById("metricRowCount");
+        this.elements.sourceSummary = document.getElementById("sourceSummary");
+      },
+
+      bindEvents() {
+        document.addEventListener("click", this.handleClick.bind(this));
+        this.elements.fieldTableBody.addEventListener("input", this.handleTableInput.bind(this));
+        this.elements.sourceMessage.addEventListener("input", this.updateMetrics.bind(this));
+        this.elements.fileInput.addEventListener("change", this.handleFileImport.bind(this));
+      },
+
+      handleClick(event) {
+        const actionTarget = event.target.closest("[data-action]");
+        if (actionTarget) {
+          const action = actionTarget.dataset.action;
+
+          if (action === "reset") this.reset(true);
+          if (action === "split") this.splitMessage();
+          if (action === "merge") this.mergeMessage();
+          if (action === "copy-merged") this.copyMergedMessage();
+          if (action === "add-row") this.addRow();
+          if (action === "export-csv") this.exportCSV();
+          if (action === "export-json") this.exportJSON();
+          if (action === "import") this.elements.fileInput.click();
+
+          return;
+        }
+
+        const row = event.target.closest("tr");
+        if (!row) return;
+
+        if (event.target.closest(".js-delete")) {
+          row.remove();
+          this.afterTableChange("행을 삭제했습니다.");
+        }
+
+        if (event.target.closest(".js-move-up")) {
+          const previous = row.previousElementSibling;
+          if (previous) {
+            this.elements.fieldTableBody.insertBefore(row, previous);
+            this.afterTableChange("행 순서를 변경했습니다.");
+          }
+        }
+
+        if (event.target.closest(".js-move-down")) {
+          const next = row.nextElementSibling;
+          if (next) {
+            this.elements.fieldTableBody.insertBefore(next, row);
+            this.afterTableChange("행 순서를 변경했습니다.");
+          }
+        }
+      },
+
+      handleTableInput() {
+        this.refreshTableState();
+      },
+
+      afterTableChange(message) {
+        this.refreshTableState();
+        this.setStatus(message, "ok", this.buildLengthSummary());
+      },
+
+      reset(notify = true) {
+        this.elements.sourceMessage.value = "";
+        this.elements.mergedMessage.value = "";
+        this.elements.fieldTableBody.innerHTML = "";
+        this.addRow({ name: "msgType", label: "전문구분", length: 4, content: "" }, false);
+        this.addRow({ name: "customerId", label: "고객번호", length: 10, content: "" }, false);
+        this.addRow({ name: "payload", label: "본문", length: 20, content: "" }, false);
+        this.refreshTableState();
+
+        if (notify) {
+          this.setStatus("기본 필드 구성을 불러왔습니다.", "ok", this.buildLengthSummary());
+        }
+      },
+
+      addRow(data = {}, focus = true) {
+        const fragment = this.elements.rowTemplate.content.cloneNode(true);
+        const row = fragment.querySelector("tr");
+        row.querySelector(".js-name").value = data.name || "";
+        row.querySelector(".js-label").value = data.label || "";
+        row.querySelector(".js-length").value = data.length || "";
+        row.querySelector(".js-content").value = data.content || "";
+        this.elements.fieldTableBody.appendChild(fragment);
+        this.refreshTableState();
+
+        if (focus) {
+          row.querySelector(".js-name").focus();
+        }
+      },
+
+      getRows() {
+        return Array.from(this.elements.fieldTableBody.querySelectorAll("tr"));
+      },
+
+      collectFields() {
+        const rows = this.getRows();
+        const fields = [];
+        let valid = true;
+
+        rows.forEach((row, index) => {
+          const name = row.querySelector(".js-name").value.trim();
+          const label = row.querySelector(".js-label").value.trim();
+          const lengthValue = row.querySelector(".js-length").value.trim();
+          const length = Number.parseInt(lengthValue, 10);
+          const content = row.querySelector(".js-content").value;
+          const rowValid = Boolean(name) && Number.isInteger(length) && length > 0;
+
+          row.dataset.invalid = rowValid ? "false" : "true";
+          if (!rowValid) valid = false;
+
+          fields.push({
+            index: index + 1,
+            name,
+            label,
+            length,
+            content,
+            row
+          });
+        });
+
+        return { fields, valid };
+      },
+
+      splitMessage() {
+        const message = this.elements.sourceMessage.value;
+        if (!message) {
+          this.setStatus("원본 전문이 비어 있습니다.", "error", "전문 입력 후 다시 실행하세요.");
+          return;
+        }
+
+        const { fields, valid } = this.collectFields();
+        if (!fields.length) {
+          this.setStatus("필드가 없습니다.", "error", "행을 추가한 뒤 다시 실행하세요.");
+          return;
+        }
+
+        if (!valid) {
+          this.setStatus("필드 정의가 유효하지 않습니다.", "error", "영문명과 길이(1 이상)를 모두 입력하세요.");
+          return;
+        }
+
+        let offset = 0;
+        fields.forEach((field) => {
+          const chunk = message.slice(offset, offset + field.length);
+          field.row.querySelector(".js-content").value = chunk;
+          offset += field.length;
+        });
+
+        const remaining = message.length - offset;
+        const detail = remaining === 0
+          ? `원본 ${message.length}자와 필드 합계가 일치합니다.`
+          : remaining > 0
+            ? `원본이 ${remaining}자 더 깁니다. 마지막 이후 ${remaining}자가 남았습니다.`
+            : `필드 길이 합계가 ${Math.abs(remaining)}자 더 큽니다. 일부 필드는 빈 값이 됩니다.`;
+
+        this.refreshTableState();
+        this.setStatus("전문 분석을 완료했습니다.", "ok", detail);
+      },
+
+      mergeMessage() {
+        const { fields, valid } = this.collectFields();
+        if (!fields.length) {
+          this.setStatus("필드가 없습니다.", "error", "행을 추가한 뒤 다시 실행하세요.");
+          return;
+        }
+
+        if (!valid) {
+          this.setStatus("필드 정의가 유효하지 않습니다.", "error", "영문명과 길이(1 이상)를 모두 입력하세요.");
+          return;
+        }
+
+        const merged = fields.map((field) => {
+          const raw = field.row.querySelector(".js-content").value;
+          if (raw.length >= field.length) {
+            return raw.slice(0, field.length);
+          }
+          return raw.padEnd(field.length, " ");
+        }).join("");
+
+        this.elements.mergedMessage.value = merged;
+        this.elements.sourceMessage.value = merged;
+        this.updateMetrics();
+        this.setStatus("전문 합치기를 완료했습니다.", "ok", `결과 전문 길이 ${merged.length}자`);
+      },
+
+      async copyMergedMessage() {
+        const text = this.elements.mergedMessage.value;
+        if (!text) {
+          this.setStatus("복사할 합쳐진 전문이 없습니다.", "error", "먼저 전문 합치기를 실행하세요.");
+          return;
+        }
+
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            this.elements.mergedMessage.focus();
+            this.elements.mergedMessage.select();
+            const copied = document.execCommand("copy");
+            this.elements.mergedMessage.setSelectionRange(0, 0);
+            this.elements.mergedMessage.blur();
+
+            if (!copied) {
+              throw new Error("clipboard fallback failed");
+            }
+          }
+
+          this.setStatus("합쳐진 전문을 클립보드에 복사했습니다.", "ok", `복사 길이 ${text.length}자`);
+        } catch (error) {
+          this.setStatus("복사에 실패했습니다.", "error", "브라우저 권한 또는 보안 컨텍스트를 확인하세요.");
+        }
+      },
+
+      exportCSV() {
+        const { fields } = this.collectFields();
+        if (!fields.length) {
+          this.setStatus("내보낼 행이 없습니다.", "error", "필드를 먼저 입력하세요.");
+          return;
+        }
+
+        const rows = [
+          ["name", "label", "length", "content"],
+          ...fields.map((field) => [field.name, field.label, String(field.length || ""), field.content])
+        ];
+        const csv = rows.map((row) => row.map(this.escapeCSVCell).join(",")).join("\r\n");
+        this.downloadFile(csv, "msg-fields.csv", "text/csv;charset=utf-8;");
+        this.setStatus("CSV 내보내기를 완료했습니다.", "ok", `${fields.length}개 행 저장`);
+      },
+
+      exportJSON() {
+        const { fields } = this.collectFields();
+        if (!fields.length) {
+          this.setStatus("내보낼 행이 없습니다.", "error", "필드를 먼저 입력하세요.");
+          return;
+        }
+
+        const data = fields.map((field) => ({
+          name: field.name,
+          label: field.label,
+          length: Number.isInteger(field.length) ? field.length : "",
+          content: field.content
+        }));
+
+        this.downloadFile(JSON.stringify(data, null, 2), "msg-fields.json", "application/json;charset=utf-8;");
+        this.setStatus("JSON 내보내기를 완료했습니다.", "ok", `${fields.length}개 행 저장`);
+      },
+
+      handleFileImport(event) {
+        const [file] = event.target.files;
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const text = String(reader.result || "").replace(/^\uFEFF/, "");
+            if (file.name.toLowerCase().endsWith(".json")) {
+              this.importJSON(text);
+            } else {
+              this.importCSV(text);
+            }
+          } catch (error) {
+            this.setStatus("가져오기에 실패했습니다.", "error", error instanceof Error ? error.message : "알 수 없는 오류");
+          }
+        };
+        reader.readAsText(file, "UTF-8");
+        event.target.value = "";
+      },
+
+      importJSON(text) {
+        const data = JSON.parse(text);
+        if (!Array.isArray(data)) {
+          throw new Error("JSON은 배열 형식이어야 합니다.");
+        }
+
+        this.elements.fieldTableBody.innerHTML = "";
+        data.forEach((item) => {
+          this.addRow({
+            name: item.name || "",
+            label: item.label || "",
+            length: item.length || "",
+            content: item.content || ""
+          }, false);
+        });
+        this.refreshTableState();
+        this.setStatus("JSON 가져오기를 완료했습니다.", "ok", `${data.length}개 행 반영`);
+      },
+
+      importCSV(text) {
+        const rows = this.parseCSV(text);
+        if (rows.length < 2) {
+          throw new Error("CSV 데이터 행이 없습니다.");
+        }
+
+        this.elements.fieldTableBody.innerHTML = "";
+        rows.slice(1).forEach((columns) => {
+          this.addRow({
+            name: columns[0] || "",
+            label: columns[1] || "",
+            length: columns[2] || "",
+            content: columns[3] || ""
+          }, false);
+        });
+        this.refreshTableState();
+        this.setStatus("CSV 가져오기를 완료했습니다.", "ok", `${rows.length - 1}개 행 반영`);
+      },
+
+      parseCSV(text) {
+        const rows = [];
+        let currentCell = "";
+        let currentRow = [];
+        let insideQuotes = false;
+
+        for (let i = 0; i < text.length; i += 1) {
+          const char = text[i];
+          const nextChar = text[i + 1];
+
+          if (char === '"') {
+            if (insideQuotes && nextChar === '"') {
+              currentCell += '"';
+              i += 1;
+            } else {
+              insideQuotes = !insideQuotes;
+            }
+            continue;
+          }
+
+          if (char === "," && !insideQuotes) {
+            currentRow.push(currentCell);
+            currentCell = "";
+            continue;
+          }
+
+          if ((char === "\n" || char === "\r") && !insideQuotes) {
+            if (char === "\r" && nextChar === "\n") {
+              i += 1;
+            }
+            currentRow.push(currentCell);
+            if (currentRow.some((cell) => cell !== "")) {
+              rows.push(currentRow);
+            }
+            currentCell = "";
+            currentRow = [];
+            continue;
+          }
+
+          currentCell += char;
+        }
+
+        if (currentCell !== "" || currentRow.length) {
+          currentRow.push(currentCell);
+          rows.push(currentRow);
+        }
+
+        return rows;
+      },
+
+      escapeCSVCell(value) {
+        return `"${String(value).replace(/"/g, '""')}"`;
+      },
+
+      downloadFile(text, filename, mimeType) {
+        const blob = new Blob(["\uFEFF" + text], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      },
+
+      refreshTableState() {
+        this.getRows().forEach((row, index) => {
+          row.querySelector(".js-index").textContent = String(index + 1);
+        });
+        this.collectFields();
+        this.updateMetrics();
+      },
+
+      updateMetrics() {
+        const sourceLength = this.elements.sourceMessage.value.length;
+        const { fields } = this.collectFields();
+        const totalFieldLength = fields.reduce((sum, field) => sum + (Number.isInteger(field.length) ? field.length : 0), 0);
+
+        this.elements.metricSourceLength.textContent = String(sourceLength);
+        this.elements.metricFieldLength.textContent = String(totalFieldLength);
+        this.elements.metricRowCount.textContent = String(fields.length);
+        this.elements.sourceSummary.textContent = `${sourceLength}자 입력 / ${totalFieldLength}자 정의`;
+      },
+
+      buildLengthSummary() {
+        const sourceLength = this.elements.sourceMessage.value.length;
+        const { fields } = this.collectFields();
+        const total = fields.reduce((sum, field) => sum + (Number.isInteger(field.length) ? field.length : 0), 0);
+        return `원본 ${sourceLength}자 / 필드 합계 ${total}자 / ${fields.length}개 행`;
+      },
+
+      setStatus(message, state = "ok", detail = "") {
+        this.elements.statusBar.dataset.state = state;
+        this.elements.statusMessage.textContent = message;
+        this.elements.statusDetail.textContent = detail;
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      App.init();
+    });
+  </script>
 </body>
 </html>
